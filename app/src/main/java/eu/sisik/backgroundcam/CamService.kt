@@ -1,8 +1,10 @@
 package eu.sisik.backgroundcam
 
+import android.Manifest
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.ImageFormat
 import android.graphics.PixelFormat
@@ -11,6 +13,7 @@ import android.hardware.camera2.*
 import android.media.ImageReader
 import android.os.Build
 import android.os.IBinder
+import android.support.v4.app.ActivityCompat
 import android.support.v4.app.NotificationCompat
 import android.util.Log
 import android.util.Size
@@ -194,6 +197,20 @@ class CamService: Service() {
 
         previewSize = chooseSupportedSize(camId!!, width, height)
 
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
         cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
