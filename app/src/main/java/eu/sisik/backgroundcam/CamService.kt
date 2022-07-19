@@ -1,6 +1,7 @@
 package eu.sisik.backgroundcam
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
@@ -13,11 +14,10 @@ import android.hardware.camera2.*
 import android.media.ImageReader
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.NotificationCompat
 import android.util.Log
 import android.util.Size
 import android.view.*
+import androidx.core.app.NotificationCompat
 import java.util.*
 import kotlin.Exception
 import kotlin.collections.ArrayList
@@ -180,6 +180,7 @@ class CamService: Service() {
         wm!!.addView(rootView, params)
     }
 
+    @SuppressLint("MissingPermission")
     private fun initCam(width: Int, height: Int) {
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
@@ -197,20 +198,6 @@ class CamService: Service() {
 
         previewSize = chooseSupportedSize(camId!!, width, height)
 
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
-        }
         cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
@@ -221,13 +208,13 @@ class CamService: Service() {
         // Get all supported sizes for TextureView
         val characteristics = manager.getCameraCharacteristics(camId)
         val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-        val supportedSizes = map.getOutputSizes(SurfaceTexture::class.java)
+        val supportedSizes = map?.getOutputSizes(SurfaceTexture::class.java)
 
         // We want to find something near the size of our TextureView
         val texViewArea = textureViewWidth * textureViewHeight
         val texViewAspect = textureViewWidth.toFloat()/textureViewHeight.toFloat()
 
-        val nearestToFurthestSz = supportedSizes.sortedWith(compareBy(
+        val nearestToFurthestSz = supportedSizes?.sortedWith(compareBy(
             // First find something with similar aspect
             {
                 val aspect = if (it.width < it.height) it.width.toFloat() / it.height.toFloat()
@@ -241,8 +228,10 @@ class CamService: Service() {
         ))
 
 
-        if (nearestToFurthestSz.isNotEmpty())
-            return nearestToFurthestSz[0]
+        if (nearestToFurthestSz != null) {
+            if (nearestToFurthestSz.isNotEmpty())
+                return nearestToFurthestSz[0]
+        }
 
         return Size(320, 200)
     }
