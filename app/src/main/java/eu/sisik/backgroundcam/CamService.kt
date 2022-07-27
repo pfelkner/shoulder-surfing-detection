@@ -232,25 +232,15 @@ class CamService: Service() {
         wm!!.addView(rootView, params)
     }
 
-    fun getFrontFacingCameraId(cManager: CameraManager): String? {
-        for (cameraId in cManager.cameraIdList) {
-            val characteristics = cManager.getCameraCharacteristics(cameraId!!)
-            val cOrientation = characteristics.get(CameraCharacteristics.LENS_FACING)!!
-            if (cOrientation == CameraCharacteristics.LENS_FACING_FRONT) return cameraId
-        }
-        return null
-    }
-
     private fun initCam(width: Int, height: Int) {
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
-        var camId: String? = getFrontFacingCameraId(cameraManager!!)
-        Log.e("*******CAMFACING******", "Direction: " + camId)
+        var camId: String? = null
+        //LDont get confused with the crossover of cam ID and facing direction, its working!
         for (id in cameraManager!!.cameraIdList) {
             val characteristics = cameraManager!!.getCameraCharacteristics(id)
             val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-            Log.e("*******CAMFACING******", "Direction: " + facing)
             if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
                 camId = id
                 break
@@ -258,7 +248,8 @@ class CamService: Service() {
         }
 
 
-        previewSize = chooseSupportedSize(camId!!, width, height)
+        previewSize = chooseSupportedSize("1", width, height)
+//        previewSize = chooseSupportedSize(camId!!, width, height)
 
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -274,8 +265,9 @@ class CamService: Service() {
             // for ActivityCompat#requestPermissions for more details.
             return
         }
-        cameraManager!!.openCamera(CameraCharacteristics.LENS_FACING_FRONT.toString(), stateCallback, null)
-//        cameraManager!!.openCamera(camId, stateCallback, null)
+
+        cameraManager!!.openCamera(camId!!, stateCallback, null)
+
     }
 
     private fun chooseSupportedSize(camId: String, textureViewWidth: Int, textureViewHeight: Int): Size {
