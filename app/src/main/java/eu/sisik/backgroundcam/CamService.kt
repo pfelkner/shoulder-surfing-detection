@@ -11,17 +11,24 @@ import android.graphics.ImageFormat
 import android.graphics.PixelFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
+import android.media.Image
 import android.media.ImageReader
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.util.Size
+import android.util.SparseIntArray
 import android.view.*
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import java.util.*
-import kotlin.Exception
-import kotlin.collections.ArrayList
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetector
+import com.google.mlkit.vision.face.FaceDetectorOptions
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.math.absoluteValue
+
 
 /**
  * Copyright (c) 2019 by Roman Sisik. All rights reserved.
@@ -40,9 +47,23 @@ class CamService: Service() {
     private var captureRequest: CaptureRequest? = null
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
+    private lateinit var img: InputImage
+    private var isProcessing: Boolean = false
+
+    private var windowManager: WindowManager? = null
 
     // You can start service in 2 modes - 1.) with preview 2.) without preview (only bg processing)
     private var shouldShowPreview = true
+
+    private fun getFaceDetector(): FaceDetector {
+        val options = FaceDetectorOptions.Builder()
+            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+            .setMinFaceSize(0.1f) //.enableTracking()
+            .build()
+        return FaceDetection.getClient(options)
+    }
 
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
@@ -78,14 +99,45 @@ class CamService: Service() {
 
 
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
-        val image = reader?.acquireLatestImage()
-
+        if (windowManager == null) windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        var image: Image? = null
+        if (!isProcessing) {
+            image = reader?.acquireLatestImage()!!
+            img = InputImage.fromMediaImage(image!!, getRotationCompensation(windowManager))
+            isProcessing = true
+        }
         Log.d(TAG, "Got image: " + image?.width + " x " + image?.height)
+
+
+
 
         // Process image here..ideally async so that you don't block the callback
         // ..
 
+        val faceDetector: FaceDetector = getFaceDetector()
+        val result =   countFaces(faceDetector)
+
         image?.close()
+    }
+
+    private fun countFaces(faceDetector: FaceDetector) = runBlocking {
+        launch {
+            val fd = FaceDetection.getClient()
+            val result = fd.process(img)
+                .addOnSuccessListener { faces ->
+                    // Task completed successfully
+                    // ...
+                    Log.e("########FACES", "Faces detected: "+faces.size)
+                    isProcessing = false
+                }
+                .addOnFailureListener { e ->
+                    // Task failed with an exception
+                    // ...
+                    Log.e("+++++++++FACES", e.message.toString())
+                    isProcessing = false
+                }
+            }
+//        return result
     }
 
     private val stateCallback = object : CameraDevice.StateCallback() {
@@ -180,25 +232,50 @@ class CamService: Service() {
         wm!!.addView(rootView, params)
     }
 
-    @SuppressLint("MissingPermission")
+    fun getFrontFacingCameraId(cManager: CameraManager): String? {
+        for (cameraId in cManager.cameraIdList) {
+            val characteristics = cManager.getCameraCharacteristics(cameraId!!)
+            val cOrientation = characteristics.get(CameraCharacteristics.LENS_FACING)!!
+            if (cOrientation == CameraCharacteristics.LENS_FACING_FRONT) return cameraId
+        }
+        return null
+    }
+
     private fun initCam(width: Int, height: Int) {
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
-        var camId: String? = null
-
+        var camId: String? = getFrontFacingCameraId(cameraManager!!)
+        Log.e("*******CAMFACING******", "Direction: " + camId)
         for (id in cameraManager!!.cameraIdList) {
             val characteristics = cameraManager!!.getCameraCharacteristics(id)
             val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
+            Log.e("*******CAMFACING******", "Direction: " + facing)
             if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
                 camId = id
                 break
             }
         }
 
+
         previewSize = chooseSupportedSize(camId!!, width, height)
 
-        cameraManager!!.openCamera(camId, stateCallback, null)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        cameraManager!!.openCamera(CameraCharacteristics.LENS_FACING_FRONT.toString(), stateCallback, null)
+//        cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
     private fun chooseSupportedSize(camId: String, textureViewWidth: Int, textureViewHeight: Int): Size {
@@ -340,6 +417,32 @@ class CamService: Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private val ORIENTATIONS = SparseIntArray()
+
+    init {
+        ORIENTATIONS.append(Surface.ROTATION_0, 0)
+        ORIENTATIONS.append(Surface.ROTATION_90, 90)
+        ORIENTATIONS.append(Surface.ROTATION_180, 180)
+        ORIENTATIONS.append(Surface.ROTATION_270, 270)
+    }
+
+    /**
+     * Get the angle by which an image must be rotated given the device's current
+     * orientation.
+     */
+//    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+//    @Throws(CameraAccessException::class)
+    private fun getRotationCompensation(wm: WindowManager?): Int {
+        val deviceRotation = wm?.defaultDisplay?.rotation
+        var rotationCompensation = ORIENTATIONS[deviceRotation!!]
+
+        val sensorOrientation = cameraManager
+            ?.getCameraCharacteristics(CameraCharacteristics.LENS_FACING_FRONT.toString())
+            ?.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
+
+        return (sensorOrientation + rotationCompensation) % 360
     }
 
 
