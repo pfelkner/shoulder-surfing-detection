@@ -1,7 +1,6 @@
 package eu.sisik.backgroundcam
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
@@ -99,15 +98,23 @@ class CamService: Service() {
 
 
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
+        if(isProcessing){
+//            captureSession!!.stopRepeating()
+            captureSession!!.abortCaptures()
+        }
         if (windowManager == null) windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         var image: Image? = null
         if (!isProcessing) {
-            image = reader?.acquireLatestImage()!!
-            img = InputImage.fromMediaImage(image!!, getRotationCompensation(windowManager))
+            image = reader!!.acquireLatestImage()!!
+//            TODO IMPORTANT! figure this out, why is it not calculating orientation correctly?
+            img = InputImage.fromMediaImage(image!!, 270)
+//            img = InputImage.fromMediaImage(image!!, getRotationCompensation(windowManager))
             isProcessing = true
+            //captureSession!!.captureSingleRequest(captureRequest!!, null, captureCallback)
+            captureSession!!.capture(captureRequest!!, captureCallback, null)
+//            captureSession!!.setRepeatingRequest(captureRequest!!, captureCallback, null)
         }
         Log.d(TAG, "Got image: " + image?.width + " x " + image?.height)
-
 
 
 
@@ -115,29 +122,40 @@ class CamService: Service() {
         // ..
 
         val faceDetector: FaceDetector = getFaceDetector()
-        val result =   countFaces(faceDetector)
+        val result =   countFaces(faceDetector, image)
 
-        image?.close()
+//        if (!isProcessing) {
+//            image?.close()
+//        }
     }
 
-    private fun countFaces(faceDetector: FaceDetector) = runBlocking {
+
+    private fun countFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
         launch {
-            val fd = FaceDetection.getClient()
-            val result = fd.process(img)
+            val faceDetector = FaceDetection.getClient()
+            Log.e("IMG", "IMG: "+ img.rotationDegrees)
+            val result = faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     // Task completed successfully
                     // ...
                     Log.e("########FACES", "Faces detected: "+faces.size)
                     isProcessing = false
+                    Log.e("+++++++++", img.toString())
                 }
                 .addOnFailureListener { e ->
-                    // Task failed with an exception
-                    // ...
                     Log.e("+++++++++FACES", e.message.toString())
+                    Log.e("+++++++++Cause", e.cause.toString())
+                    Log.e("----------", img.toString())
+                    e.printStackTrace()
                     isProcessing = false
                 }
+                .addOnCompleteListener{
+//                    captureSession
+                    if (captureSession != null && captureRequest != null && captureCallback != null)
+                    captureSession!!.capture(captureRequest!!, captureCallback, null)
+                    image?.close()
+                }
             }
-//        return result
     }
 
     private val stateCallback = object : CameraDevice.StateCallback() {
@@ -194,7 +212,8 @@ class CamService: Service() {
 
         shouldShowPreview = false
 
-        initCam(320, 200)
+        initCam(1080, 1080)
+//        initCam(320, 200)
     }
 
     private fun startWithPreview() {
@@ -248,8 +267,8 @@ class CamService: Service() {
         }
 
 
-        previewSize = chooseSupportedSize("1", width, height)
-//        previewSize = chooseSupportedSize(camId!!, width, height)
+//        previewSize = chooseSupportedSize("1", width, height)
+        previewSize = chooseSupportedSize(camId!!, width, height)
 
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -337,7 +356,8 @@ class CamService: Service() {
             val targetSurfaces = ArrayList<Surface>()
 
             // Prepare CaptureRequest that can be used with CameraCaptureSession
-            val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+            val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_VIDEO_SNAPSHOT).apply {
+//            val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
 
                 if (shouldShowPreview) {
                     val texture = textureView!!.surfaceTexture!!
@@ -351,8 +371,9 @@ class CamService: Service() {
                 // Configure target surface for background processing (ImageReader)
                 imageReader = ImageReader.newInstance(
                     previewSize!!.getWidth(), previewSize!!.getHeight(),
-                    ImageFormat.YUV_420_888, 2
+                    ImageFormat.YUV_420_888, 15
                 )
+                Log.e("ImageReader", "Width: "+ previewSize!!.width+ "Height: " + previewSize!!.height)
                 imageReader!!.setOnImageAvailableListener(imageListener, null)
 
                 targetSurfaces.add(imageReader!!.surface)
@@ -361,6 +382,7 @@ class CamService: Service() {
                 // Set some additional parameters for the request
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
+//                set(CaptureRequest., CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
             }
 
             // Prepare CameraCaptureSession
@@ -377,7 +399,8 @@ class CamService: Service() {
                         try {
                             // Now we can start capturing
                             captureRequest = requestBuilder!!.build()
-                            captureSession!!.setRepeatingRequest(captureRequest!!, captureCallback, null)
+                            captureSession!!.capture(captureRequest!!, captureCallback, null)
+//                            captureSession!!.setRepeatingRequest(captureRequest!!, captureCallback, null)
 
                         } catch (e: CameraAccessException) {
                             Log.e(TAG, "createCaptureSession", e)
@@ -427,14 +450,15 @@ class CamService: Service() {
 //    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 //    @Throws(CameraAccessException::class)
     private fun getRotationCompensation(wm: WindowManager?): Int {
-        val deviceRotation = wm?.defaultDisplay?.rotation
+        var deviceRotation = wm?.defaultDisplay?.rotation
         var rotationCompensation = ORIENTATIONS[deviceRotation!!]
 
         val sensorOrientation = cameraManager
             ?.getCameraCharacteristics(CameraCharacteristics.LENS_FACING_FRONT.toString())
             ?.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
 
-        return (sensorOrientation + rotationCompensation) % 360
+        return (sensorOrientation + (-rotationCompensation)) % 360
+
     }
 
 
