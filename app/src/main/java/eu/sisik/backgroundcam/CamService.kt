@@ -1,23 +1,27 @@
 package eu.sisik.backgroundcam
 
 import android.Manifest
+import android.R.attr.data
 import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.ImageFormat
-import android.graphics.PixelFormat
-import android.graphics.SurfaceTexture
+import android.graphics.*
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.Drawable.*
 import android.hardware.camera2.*
 import android.media.Image
 import android.media.ImageReader
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.util.Size
 import android.util.SparseIntArray
 import android.view.*
+import android.widget.ImageView
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.google.mlkit.vision.common.InputImage
@@ -26,6 +30,7 @@ import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.*
 import kotlin.math.absoluteValue
 
 
@@ -38,6 +43,8 @@ class CamService: Service() {
     private var wm: WindowManager? = null
     private var rootView: View? = null
     private var textureView: TextureView? = null
+    private var imageView: ImageView? = null
+    private lateinit var drawable: Drawable
 
     // Camera2-related stuff
     private var cameraManager: CameraManager? = null
@@ -48,6 +55,7 @@ class CamService: Service() {
     private var imageReader: ImageReader? = null
     private lateinit var img: InputImage
     private var isProcessing: Boolean = false
+    private var isWarning: Boolean = false
 
     private var windowManager: WindowManager? = null
 
@@ -121,18 +129,13 @@ class CamService: Service() {
         // Process image here..ideally async so that you don't block the callback
         // ..
 
-        val faceDetector: FaceDetector = getFaceDetector()
-        val result =   countFaces(faceDetector, image)
-
-//        if (!isProcessing) {
-//            image?.close()
-//        }
+        countFaces(getFaceDetector(), image)
     }
 
 
     private fun countFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
         launch {
-            val faceDetector = FaceDetection.getClient()
+//            val faceDetector = FaceDetection.getClient()
             Log.e("IMG", "IMG: "+ img.rotationDegrees)
             val result = faceDetector.process(img)
                 .addOnSuccessListener { faces ->
@@ -141,22 +144,52 @@ class CamService: Service() {
                     Log.e("########FACES", "Faces detected: "+faces.size)
                     isProcessing = false
                     Log.e("+++++++++", img.toString())
+                    if (!isWarning && faces.size > 0)
+                        initOverlay()
                 }
                 .addOnFailureListener { e ->
                     Log.e("+++++++++FACES", e.message.toString())
                     Log.e("+++++++++Cause", e.cause.toString())
                     Log.e("----------", img.toString())
                     e.printStackTrace()
+//                    TODO figure out if image has to be closed or onComplete is called after fail
                     isProcessing = false
                 }
                 .addOnCompleteListener{
-//                    captureSession
                     if (captureSession != null && captureRequest != null && captureCallback != null)
                     captureSession!!.capture(captureRequest!!, captureCallback, null)
                     image?.close()
                 }
             }
     }
+
+    private fun store_image(image: Image?) = runBlocking { launch {
+        val outStream: FileOutputStream
+        try {
+            Log.d("CAMERA", "picture taken")
+            // create a File object for the parent directory
+            //todo mkdirs is ignored?
+            val myDirectory: File =
+                File(Environment.getExternalStorageDirectory().toString() + "/Test")
+            // have the object build the directory structure, if needed.
+            myDirectory.mkdirs()
+            val imagePath = File(applicationContext.filesDir, "my_images")
+            if (!imagePath.exists()) imagePath.mkdir()
+            val newFile = File(imagePath, "default_image.jpg")
+
+
+            // create a File object for the output file
+            outStream = FileOutputStream(imagePath.toString() + "default_image.jpg")
+            outStream.write(data)
+            outStream.close()
+//            mCamera.release()
+//            mCamera = null
+        } catch (e: IOException) {
+            Log.d("CAMERA", e.message!!)
+        } catch (e: CameraAccessException) {
+            e.printStackTrace()
+        }
+    } }
 
     private val stateCallback = object : CameraDevice.StateCallback() {
 
@@ -194,6 +227,7 @@ class CamService: Service() {
 
     override fun onCreate() {
         super.onCreate()
+        drawable = resources.getDrawable(R.drawable.ic_baseline_warning_24)
         startForeground()
     }
 
@@ -235,7 +269,20 @@ class CamService: Service() {
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         rootView = li.inflate(R.layout.overlay, null)
         textureView = rootView?.findViewById(R.id.texPreview)
+        imageView = rootView?.findViewById(R.id.simpleImageView)
+//        imageView = rootView?.findViewById(R.id.simpleImageView)
+//        if (image != null) {
+//            val buffer: ByteBuffer = image!!.planes[0].buffer
+//            val bytes = ByteArray(buffer.capacity())
+//            while (buffer.remaining() >= 8) {
+//                buffer.get(bytes)
+//            }
+//            val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
+//            Log.e("#+#+#+#+#++", "Bitmap: "+bitmapImage.height)
+//            imageView?.setImageBitmap(bitmapImage)
+//        }
 
+        imageView?.setImageDrawable(drawable)
         val type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
         else
@@ -246,9 +293,13 @@ class CamService: Service() {
             WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
-
+        isWarning = true
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         wm!!.addView(rootView, params)
+        Handler().postDelayed(Runnable {
+            imageView?.setImageDrawable(null)
+            isWarning = false;
+                                       }, 5000)
     }
 
     private fun initCam(width: Int, height: Int) {
@@ -266,8 +317,6 @@ class CamService: Service() {
             }
         }
 
-
-//        previewSize = chooseSupportedSize("1", width, height)
         previewSize = chooseSupportedSize(camId!!, width, height)
 
         if (ActivityCompat.checkSelfPermission(
@@ -342,7 +391,7 @@ class CamService: Service() {
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getText(R.string.app_name))
             .setContentText(getText(R.string.app_name))
-            .setSmallIcon(R.drawable.notification_template_icon_bg)
+            .setSmallIcon(R.drawable.ic_baseline_notifications_24)
             .setContentIntent(pendingIntent)
             .setTicker(getText(R.string.app_name))
             .build()
