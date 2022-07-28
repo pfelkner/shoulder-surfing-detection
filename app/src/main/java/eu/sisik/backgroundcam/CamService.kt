@@ -1,11 +1,9 @@
 package eu.sisik.backgroundcam
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.hardware.camera2.*
@@ -19,7 +17,6 @@ import android.util.Size
 import android.util.SparseIntArray
 import android.view.*
 import android.widget.ImageView
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
@@ -50,9 +47,9 @@ class CamService: Service() {
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
     private lateinit var img: InputImage
+
     private var isProcessing: Boolean = false
     private var isWarning: Boolean = false
-
     private var windowManager: WindowManager? = null
 
     // You can start service in 2 modes - 1.) with preview 2.) without preview (only bg processing)
@@ -114,17 +111,10 @@ class CamService: Service() {
             img = InputImage.fromMediaImage(image, 270)
 //            img = InputImage.fromMediaImage(image!!, getRotationCompensation(windowManager))
             isProcessing = true
-            //captureSession!!.captureSingleRequest(captureRequest!!, null, captureCallback)
             captureSession!!.capture(captureRequest!!, captureCallback, null)
 //            captureSession!!.setRepeatingRequest(captureRequest!!, captureCallback, null)
         }
         Log.d(TAG, "Got image: " + image?.width + " x " + image?.height)
-
-
-
-        // Process image here..ideally async so that you don't block the callback
-        // ..
-
         countFaces(getFaceDetector(), image)
     }
 
@@ -144,9 +134,7 @@ class CamService: Service() {
                         initOverlay()
                 }
                 .addOnFailureListener { e ->
-                    Log.e("+++++++++FACES", e.message.toString())
                     Log.e("+++++++++Cause", e.cause.toString())
-                    Log.e("----------", img.toString())
                     e.printStackTrace()
 //                    TODO figure out if image has to be closed or onComplete is called after fail
                     isProcessing = false
@@ -233,41 +221,36 @@ class CamService: Service() {
     }
 
     private fun initOverlay() {
+        setupView()
 
+        isWarning = true
+        wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        wm!!.addView(rootView, determineParams())
+        Handler().postDelayed({
+            imageView?.setImageDrawable(null)
+            isWarning = false
+       }, 5000)
+    }
+
+    private fun setupView() {
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         rootView = li.inflate(R.layout.overlay, null)
         textureView = rootView?.findViewById(R.id.texPreview)
         imageView = rootView?.findViewById(R.id.simpleImageView)
-//        imageView = rootView?.findViewById(R.id.simpleImageView)
-//        if (image != null) {
-//            val buffer: ByteBuffer = image!!.planes[0].buffer
-//            val bytes = ByteArray(buffer.capacity())
-//            while (buffer.remaining() >= 8) {
-//                buffer.get(bytes)
-//            }
-//            val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
-//            Log.e("#+#+#+#+#++", "Bitmap: "+bitmapImage.height)
-//            imageView?.setImageBitmap(bitmapImage)
-//        }
-
         imageView?.setImageDrawable(drawable)
+    }
+
+    private fun determineParams(): WindowManager.LayoutParams {
         val type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
         else
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 
-        val params = WindowManager.LayoutParams(
+        return WindowManager.LayoutParams(
             type,
             WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
-        isWarning = true
-        wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        wm!!.addView(rootView, params)
-        Handler().postDelayed({
-            imageView?.setImageDrawable(null)
-            isWarning = false;
-       }, 5000)
     }
 
     @SuppressLint("MissingPermission")
@@ -275,22 +258,25 @@ class CamService: Service() {
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
-        var camId: String? = null
-        //Dont get confused with the crossover of cam ID and facing direction, its working!
-        for (id in cameraManager!!.cameraIdList) {
-            val characteristics = cameraManager!!.getCameraCharacteristics(id)
-            val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-            if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                camId = id
-                break
-            }
-        }
+        var camId: String? = getFronFacingCamId()
 
         previewSize = chooseSupportedSize(camId!!, width, height)
 
         // No Permission check required, done from the main activity
         cameraManager!!.openCamera(camId, stateCallback, null)
 
+    }
+
+    // TODO intruduce error handling here
+    //Dont get confused with the crossover of cam ID and facing direction, its working!
+    private fun getFronFacingCamId(): String? {
+        this.cameraManager!!.cameraIdList.forEach { id ->
+            val facing = this.cameraManager!!.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING)
+            if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                return id
+            }
+        }
+        return null
     }
 
     private fun chooseSupportedSize(camId: String, textureViewWidth: Int, textureViewHeight: Int): Size {
@@ -335,6 +321,12 @@ class CamService: Service() {
                 PendingIntent.getActivity(this, 0, notificationIntent, 0)
             }
 
+        val notification = createNotification(pendingIntent)
+
+        startForeground(ONGOING_NOTIFICATION_ID, notification)
+    }
+
+    private fun createNotification(intent: PendingIntent): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_NONE)
             channel.lightColor = Color.BLUE
@@ -343,15 +335,13 @@ class CamService: Service() {
             nm.createNotificationChannel(channel)
         }
 
-        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+       return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getText(R.string.app_name))
             .setContentText(getText(R.string.app_name))
             .setSmallIcon(R.drawable.ic_baseline_notifications_24)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(intent)
             .setTicker(getText(R.string.app_name))
             .build()
-
-        startForeground(ONGOING_NOTIFICATION_ID, notification)
     }
 
     private fun createCaptureSession() {
@@ -374,7 +364,7 @@ class CamService: Service() {
 
                 // Configure target surface for background processing (ImageReader)
                 imageReader = ImageReader.newInstance(
-                    previewSize!!.getWidth(), previewSize!!.getHeight(),
+                    previewSize!!.width, previewSize!!.height,
                     ImageFormat.YUV_420_888, 15
                 )
                 Log.e("ImageReader", "Width: "+ previewSize!!.width+ "Height: " + previewSize!!.height)
