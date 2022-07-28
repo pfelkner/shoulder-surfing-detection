@@ -7,20 +7,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
-//import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
-//import android.support.v4.app.ActivityCompat
-//import android.support.v4.content.ContextCompat
 import androidx.appcompat.app.AppCompatActivity
-
 import android.view.View
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.checkSelfPermission
-import androidx.core.content.PermissionChecker.checkSelfPermission
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -67,7 +60,7 @@ class MainActivity : AppCompatActivity() {
 
         when (requestCode) {
             CODE_PERM_CAMERA -> {
-                if (grantResults?.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, getString(R.string.err_no_cam_permission), Toast.LENGTH_LONG).show()
                     finish()
                 }
@@ -90,8 +83,9 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
 
                 // Don't have permission to draw over other apps yet - ask user to give permission
-                val settingsIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-                startActivityForResult(settingsIntent, CODE_PERM_SYSTEM_ALERT_WINDOW)
+                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    startActivityForResult(this, CODE_PERM_SYSTEM_ALERT_WINDOW)
+                }
                 return@setOnClickListener
             }
 
@@ -123,8 +117,8 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
 
-        val CODE_PERM_SYSTEM_ALERT_WINDOW = 6111
-        val CODE_PERM_CAMERA = 6112
+        const val CODE_PERM_SYSTEM_ALERT_WINDOW = 6111
+        const val CODE_PERM_CAMERA = 6112
 
     }
 }

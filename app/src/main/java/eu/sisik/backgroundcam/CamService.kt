@@ -1,20 +1,17 @@
 package eu.sisik.backgroundcam
 
 import android.Manifest
-import android.R.attr.data
+import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.Drawable.*
 import android.hardware.camera2.*
 import android.media.Image
 import android.media.ImageReader
-import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.util.Log
@@ -30,7 +27,6 @@ import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.io.*
 import kotlin.math.absoluteValue
 
 
@@ -115,7 +111,7 @@ class CamService: Service() {
         if (!isProcessing) {
             image = reader!!.acquireLatestImage()!!
 //            TODO IMPORTANT! figure this out, why is it not calculating orientation correctly?
-            img = InputImage.fromMediaImage(image!!, 270)
+            img = InputImage.fromMediaImage(image, 270)
 //            img = InputImage.fromMediaImage(image!!, getRotationCompensation(windowManager))
             isProcessing = true
             //captureSession!!.captureSingleRequest(captureRequest!!, null, captureCallback)
@@ -137,7 +133,7 @@ class CamService: Service() {
         launch {
 //            val faceDetector = FaceDetection.getClient()
             Log.e("IMG", "IMG: "+ img.rotationDegrees)
-            val result = faceDetector.process(img)
+            faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     // Task completed successfully
                     // ...
@@ -156,40 +152,12 @@ class CamService: Service() {
                     isProcessing = false
                 }
                 .addOnCompleteListener{
-                    if (captureSession != null && captureRequest != null && captureCallback != null)
+                    if (captureSession != null && captureRequest != null)
                     captureSession!!.capture(captureRequest!!, captureCallback, null)
                     image?.close()
                 }
             }
     }
-
-    private fun store_image(image: Image?) = runBlocking { launch {
-        val outStream: FileOutputStream
-        try {
-            Log.d("CAMERA", "picture taken")
-            // create a File object for the parent directory
-            //todo mkdirs is ignored?
-            val myDirectory: File =
-                File(Environment.getExternalStorageDirectory().toString() + "/Test")
-            // have the object build the directory structure, if needed.
-            myDirectory.mkdirs()
-            val imagePath = File(applicationContext.filesDir, "my_images")
-            if (!imagePath.exists()) imagePath.mkdir()
-            val newFile = File(imagePath, "default_image.jpg")
-
-
-            // create a File object for the output file
-            outStream = FileOutputStream(imagePath.toString() + "default_image.jpg")
-            outStream.write(data)
-            outStream.close()
-//            mCamera.release()
-//            mCamera = null
-        } catch (e: IOException) {
-            Log.d("CAMERA", e.message!!)
-        } catch (e: CameraAccessException) {
-            e.printStackTrace()
-        }
-    } }
 
     private val stateCallback = object : CameraDevice.StateCallback() {
 
@@ -296,18 +264,19 @@ class CamService: Service() {
         isWarning = true
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         wm!!.addView(rootView, params)
-        Handler().postDelayed(Runnable {
+        Handler().postDelayed({
             imageView?.setImageDrawable(null)
             isWarning = false;
-                                       }, 5000)
+       }, 5000)
     }
 
+    @SuppressLint("MissingPermission")
     private fun initCam(width: Int, height: Int) {
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
         var camId: String? = null
-        //LDont get confused with the crossover of cam ID and facing direction, its working!
+        //Dont get confused with the crossover of cam ID and facing direction, its working!
         for (id in cameraManager!!.cameraIdList) {
             val characteristics = cameraManager!!.getCameraCharacteristics(id)
             val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
@@ -319,22 +288,8 @@ class CamService: Service() {
 
         previewSize = chooseSupportedSize(camId!!, width, height)
 
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
-        }
-
-        cameraManager!!.openCamera(camId!!, stateCallback, null)
+        // No Permission check required, done from the main activity
+        cameraManager!!.openCamera(camId, stateCallback, null)
 
     }
 
@@ -431,7 +386,6 @@ class CamService: Service() {
                 // Set some additional parameters for the request
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
-//                set(CaptureRequest., CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
             }
 
             // Prepare CameraCaptureSession
@@ -447,14 +401,12 @@ class CamService: Service() {
                         captureSession = cameraCaptureSession
                         try {
                             // Now we can start capturing
-                            captureRequest = requestBuilder!!.build()
+                            captureRequest = requestBuilder.build()
                             captureSession!!.capture(captureRequest!!, captureCallback, null)
-//                            captureSession!!.setRepeatingRequest(captureRequest!!, captureCallback, null)
 
                         } catch (e: CameraAccessException) {
                             Log.e(TAG, "createCaptureSession", e)
                         }
-
                     }
 
                     override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {
@@ -499,7 +451,7 @@ class CamService: Service() {
 //    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 //    @Throws(CameraAccessException::class)
     private fun getRotationCompensation(wm: WindowManager?): Int {
-        var deviceRotation = wm?.defaultDisplay?.rotation
+        val deviceRotation = wm?.defaultDisplay?.rotation
         var rotationCompensation = ORIENTATIONS[deviceRotation!!]
 
         val sensorOrientation = cameraManager
@@ -510,18 +462,17 @@ class CamService: Service() {
 
     }
 
-
     companion object {
 
-        val TAG = "CamService"
+        const val TAG = "CamService"
 
-        val ACTION_START = "eu.sisik.backgroundcam.action.START"
-        val ACTION_START_WITH_PREVIEW = "eu.sisik.backgroundcam.action.START_WITH_PREVIEW"
-        val ACTION_STOPPED = "eu.sisik.backgroundcam.action.STOPPED"
+        const val ACTION_START = "eu.sisik.backgroundcam.action.START"
+        const val ACTION_START_WITH_PREVIEW = "eu.sisik.backgroundcam.action.START_WITH_PREVIEW"
+        const val ACTION_STOPPED = "eu.sisik.backgroundcam.action.STOPPED"
 
-        val ONGOING_NOTIFICATION_ID = 6660
-        val CHANNEL_ID = "cam_service_channel_id"
-        val CHANNEL_NAME = "cam_service_channel_name"
+        const val ONGOING_NOTIFICATION_ID = 6660
+        const val CHANNEL_ID = "cam_service_channel_id"
+        const val CHANNEL_NAME = "cam_service_channel_name"
 
     }
 }
