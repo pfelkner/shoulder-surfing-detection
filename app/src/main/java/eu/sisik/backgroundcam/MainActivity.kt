@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
+import android.widget.RadioButton
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -112,6 +113,25 @@ class MainActivity : AppCompatActivity() {
         butStart.visibility =  if (running) View.GONE else View.VISIBLE
         butStartPreview.visibility =  if (running) View.GONE else View.VISIBLE
         butStop.visibility =  if (running) View.VISIBLE else View.GONE
+    }
+
+    fun onRadioButtonClicked(view: View) {
+        if (view is RadioButton) {
+            // Is the button now checked?
+            val checked = view.isChecked
+
+            // Check which radio button was clicked
+            when (view.getId()) {
+                R.id.radio_triangle ->
+                    if (checked) {
+                        // Pirates are the best
+                    }
+                R.id.radio_frame ->
+                    if (checked) {
+                        // Ninjas rule
+                    }
+            }
+        }
     }
 
 
