@@ -3,6 +3,7 @@ package eu.sisik.backgroundcam
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.Drawable
@@ -24,6 +25,7 @@ import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.*
 import kotlin.math.absoluteValue
 
 
@@ -31,6 +33,8 @@ import kotlin.math.absoluteValue
  * Copyright (c) 2019 by Roman Sisik. All rights reserved.
  */
 class CamService: Service() {
+
+    private lateinit var alertMechanism: AlertMechanism
 
     // UI
     private var wm: WindowManager? = null
@@ -47,6 +51,7 @@ class CamService: Service() {
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
     private lateinit var img: InputImage
+    private var imgPath: String? = null
 
     private var isProcessing: Boolean = false
     private var isWarning: Boolean = false
@@ -98,6 +103,58 @@ class CamService: Service() {
     }
 
 
+    private fun saveToInternalStorage(bitmapImage: Bitmap): String {
+        val cw = ContextWrapper(applicationContext)
+        // path to /data/data/yourapp/app_data/imageDir
+        val directory: File = cw.getDir("imageDir", MODE_PRIVATE)
+        // Create imageDir
+        val mypath = File(directory, "profile.jpg")
+        var fos: FileOutputStream? = null
+        try {
+            fos = FileOutputStream(mypath)
+            // Use the compress method on the BitMap object to write image to the OutputStream
+            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos)
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        } finally {
+            try {
+                if (fos != null) {
+                    fos.close()
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+        Log.e("####++++++++++", "Storing to: "+ directory.absolutePath)
+        return directory.getAbsolutePath()
+    }
+
+    private fun loadImageFromStorage(path: String) {
+        try {
+            val f = File(path, "profile.jpg")
+            val b = BitmapFactory.decodeStream(FileInputStream(f))
+//            val imgToStore = rootView?.findViewById(R.id.i) as ImageView
+            imageView?.setImageBitmap(b)
+//            imgToStore.setImageBitmap(b)
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun convertYUV420888ToNV21(imgYUV420: Image): ByteArray {
+// Converting YUV_420_888 data to YUV_420_SP (NV21).
+        val data: ByteArray
+        val buffer0 = imgYUV420.planes[0].buffer
+        val buffer2 = imgYUV420.planes[2].buffer
+        val buffer0_size = buffer0.remaining()
+        val buffer2_size = buffer2.remaining()
+        data = ByteArray(buffer0_size + buffer2_size)
+        buffer0[data, 0, buffer0_size]
+        buffer2[data, buffer0_size, buffer2_size]
+        return data
+    }
+
+
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
         if(isProcessing){
 //            captureSession!!.stopRepeating()
@@ -107,6 +164,11 @@ class CamService: Service() {
         var image: Image? = null
         if (!isProcessing) {
             image = reader!!.acquireLatestImage()!!
+//            val buffer: ByteBuffer = image!!.planes[0].buffer
+//            val bytes = ByteArray(buffer.capacity())
+//            buffer.get(bytes)
+//            val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+//            imgPath = saveToInternalStorage(bitmapImage)
 //            TODO IMPORTANT! figure this out, why is it not calculating orientation correctly?
             img = InputImage.fromMediaImage(image, 270)
 //            img = InputImage.fromMediaImage(image!!, getRotationCompensation(windowManager))
@@ -115,12 +177,27 @@ class CamService: Service() {
 //            captureSession!!.setRepeatingRequest(captureRequest!!, captureCallback, null)
         }
         Log.d(TAG, "Got image: " + image?.width + " x " + image?.height)
-        countFaces(getFaceDetector(), image)
+        detectFaces(getFaceDetector(), image)
     }
 
 
-    private fun countFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
+    private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
+//        val buffer: ByteBuffer = image!!.planes[0].buffer
+//        val bytes = ByteArray(buffer.capacity())
+//        buffer.get(bytes)
+//        val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
+//        imgPath = saveToInternalStorage(bitmapImage)
         launch {
+//            if (image != null) {
+//                val buffer: ByteBuffer = image!!.planes[0].buffer
+//                val bytes = ByteArray(buffer.capacity()-1)
+//                buffer.get(bytes)
+////                val image_data = convertYUV420888ToNV21(image)
+//                val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+//                delay(1000L)
+//                if (bitmapImage != null)
+//                    imgPath = saveToInternalStorage(bitmapImage)
+//            }
 //            val faceDetector = FaceDetection.getClient()
             Log.e("IMG", "IMG: "+ img.rotationDegrees)
             faceDetector.process(img)
@@ -131,7 +208,11 @@ class CamService: Service() {
                     isProcessing = false
                     Log.e("+++++++++", img.toString())
                     if (!isWarning && faces.size > 0)
-                        initOverlay()
+                        initOverlay2()
+                    if (isWarning && faces.size == 0) {
+                        rootView?.setVisibility(View.GONE)
+                        isWarning = false
+                    }
                 }
                 .addOnFailureListener { e ->
                     Log.e("+++++++++Cause", e.cause.toString())
@@ -165,13 +246,15 @@ class CamService: Service() {
         }
     }
 
-
     override fun onBind(p0: Intent?): IBinder? {
         return null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
+        if (intent != null)
+            //Default value is the id of pre selected radio button
+            alertMechanism = AlertMechanism.fromInt(intent?.getIntExtra("selectedAlert", 2131231044))
         when(intent?.action) {
             ACTION_START -> start()
 
@@ -221,8 +304,9 @@ class CamService: Service() {
     }
 
     private fun initOverlay() {
-        setupView()
-
+        setupView2()
+//        if (imgPath != null)
+//            loadImageFromStorage(imgPath.toString())
         isWarning = true
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         wm!!.addView(rootView, determineParams())
@@ -232,12 +316,32 @@ class CamService: Service() {
        }, 5000)
     }
 
+    private fun initOverlay2() {
+        setupView2()
+//        if (imgPath != null)
+//            loadImageFromStorage(imgPath.toString())
+        isWarning = true
+        wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        wm!!.addView(rootView, determineParams())
+        Handler().postDelayed({
+//            rootView?.setVisibility(View.GONE)
+//            isWarning = false
+       }, 2500)
+    }
+
     private fun setupView() {
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        rootView = li.inflate(R.layout.overlay, null)
+        rootView = li.inflate(R.layout.alert_icon, null)
         textureView = rootView?.findViewById(R.id.texPreview)
         imageView = rootView?.findViewById(R.id.simpleImageView)
         imageView?.setImageDrawable(drawable)
+    }
+    private fun setupView2() {
+        val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        rootView = li.inflate(R.layout.alert_borders, null)
+//        textureView = rootView?.findViewById(R.id.texPreview)
+//        imageView = rootView?.findViewById(R.id.simpleImageView)
+//        imageView?.setImageDrawable(drawable)
     }
 
     private fun determineParams(): WindowManager.LayoutParams {
@@ -365,6 +469,7 @@ class CamService: Service() {
                 // Configure target surface for background processing (ImageReader)
                 imageReader = ImageReader.newInstance(
                     previewSize!!.width, previewSize!!.height,
+//                    ImageFormat.JPEG, 15
                     ImageFormat.YUV_420_888, 15
                 )
                 Log.e("ImageReader", "Width: "+ previewSize!!.width+ "Height: " + previewSize!!.height)

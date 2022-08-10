@@ -47,15 +47,17 @@
             app:layout_constraintBottom_toBottomOf="parent" />
 
     <RadioGroup
+            android:id="@+id/radio"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginTop="430dp"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintEnd_toEndOf="parent"
+            android:checkedButton="@+id/radio_icon">
 
         <RadioButton
-                android:id="@+id/radio_triangle"
+                android:id="@+id/radio_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Warning Sign"
@@ -63,7 +65,15 @@
                 android:minHeight="48dp" />
 
         <RadioButton
-                android:id="@+id/radio_frame"
+                android:id="@+id/radio_border"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Flashing Borders"
+                android:onClick="onRadioButtonClicked"
+                android:minHeight="48dp" />
+
+        <RadioButton
+                android:id="@+id/radio_image"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Attacker Image"

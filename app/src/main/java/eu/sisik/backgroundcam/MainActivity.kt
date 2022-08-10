@@ -9,10 +9,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import androidx.appcompat.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import kotlinx.android.synthetic.main.activity_main.*
@@ -105,6 +107,7 @@ class MainActivity : AppCompatActivity() {
 
         val intent = Intent(this, CamService::class.java)
         intent.action = action
+        intent.putExtra("selectedAlert", getSelectedRadio())
         startService(intent)
     }
 
@@ -115,6 +118,12 @@ class MainActivity : AppCompatActivity() {
         butStop.visibility =  if (running) View.VISIBLE else View.GONE
     }
 
+    fun getSelectedRadio() : Int {
+        val radioGroup = findViewById(R.id.radio) as RadioGroup;
+        Log.e("RadioSelection", "getSelectedRadio: "+ radioGroup.getCheckedRadioButtonId())
+        return radioGroup.getCheckedRadioButtonId()
+    }
+
     fun onRadioButtonClicked(view: View) {
         if (view is RadioButton) {
             // Is the button now checked?
@@ -122,13 +131,18 @@ class MainActivity : AppCompatActivity() {
 
             // Check which radio button was clicked
             when (view.getId()) {
-                R.id.radio_triangle ->
+                R.id.radio_icon ->
                     if (checked) {
                         // Pirates are the best
                     }
-                R.id.radio_frame ->
+                R.id.radio_border ->
                     if (checked) {
                         // Ninjas rule
+                    }
+//                TODO pre check one button, steup overlay depending on which one is checked
+                R.id.radio_image ->
+                    if (checked) {
+
                     }
             }
         }
