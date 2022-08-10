@@ -16,13 +16,16 @@ import android.util.Size
 import android.view.*
 import android.widget.ImageView
 import androidx.core.app.NotificationCompat
+import androidx.core.math.MathUtils.clamp
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.experimental.and
 import kotlin.math.absoluteValue
+
 
 /**
  * Copyright (c) 2019 by Roman Sisik. All rights reserved.
@@ -299,7 +302,7 @@ class CamService: Service() {
                     isProcessing = false
                     Log.e("+++++++++", img.toString())
                     if (!isWarning && faces.size > 0) // TODO change to 1 for live version
-                        startWarning()
+                        startWarning(image)
                     if (isWarning && faces.size == 0) { // TODO change to 1 for live version
                         stopWarning()
                     }
@@ -327,12 +330,12 @@ class CamService: Service() {
         return FaceDetection.getClient(options)
     }
 
-    private fun startWarning() {
+    private fun startWarning(image: Image?) {
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         when (alertMechanism) {
             AlertMechanism.WARNING_SIGN -> setupWarningView(li)
             AlertMechanism.FLASHING_BORDERS -> setupBorderView(li)
-            AlertMechanism.ATTACKER_IMAGE -> null
+            AlertMechanism.ATTACKER_IMAGE -> setupAttackerView(li, image)
         }
 
         isWarning = true
@@ -351,9 +354,16 @@ class CamService: Service() {
 
     private fun setupWarningView(li: LayoutInflater) {
         rootView = li.inflate(R.layout.alert_icon, null)
-        textureView = rootView?.findViewById(R.id.texPreview)
-        imageView = rootView?.findViewById(R.id.simpleImageView)
+//        textureView = rootView?.findViewById(R.id.texPreview)
+        imageView = rootView?.findViewById(R.id.alertIconImageView)
         imageView?.setImageDrawable(drawable)
+    }
+
+
+    private fun setupAttackerView(li: LayoutInflater, image: Image?) {
+        rootView = li.inflate(R.layout.alert_image, null)
+        if (image != null)
+            imageView?.setImageBitmap(yuv420ToBitmap(image))
     }
 
     private fun determineParams(): WindowManager.LayoutParams {
@@ -370,59 +380,6 @@ class CamService: Service() {
     }
 
 //    needs more fixing from here on
-
-//    private fun saveToInternalStorage(bitmapImage: Bitmap): String {
-//        val cw = ContextWrapper(applicationContext)
-//        // path to /data/data/yourapp/app_data/imageDir
-//        val directory: File = cw.getDir("imageDir", MODE_PRIVATE)
-//        // Create imageDir
-//        val mypath = File(directory, "profile.jpg")
-//        var fos: FileOutputStream? = null
-//        try {
-//            fos = FileOutputStream(mypath)
-//            // Use the compress method on the BitMap object to write image to the OutputStream
-//            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos)
-//        } catch (e: java.lang.Exception) {
-//            e.printStackTrace()
-//        } finally {
-//            try {
-//                if (fos != null) {
-//                    fos.close()
-//                }
-//            } catch (e: IOException) {
-//                e.printStackTrace()
-//            }
-//        }
-//        Log.e("####++++++++++", "Storing to: "+ directory.absolutePath)
-//        return directory.getAbsolutePath()
-//    }
-//
-//    private fun loadImageFromStorage(path: String) {
-//        try {
-//            val f = File(path, "profile.jpg")
-//            val b = BitmapFactory.decodeStream(FileInputStream(f))
-////            val imgToStore = rootView?.findViewById(R.id.i) as ImageView
-//            imageView?.setImageBitmap(b)
-////            imgToStore.setImageBitmap(b)
-//        } catch (e: FileNotFoundException) {
-//            e.printStackTrace()
-//        }
-//    }
-//
-//    private fun convertYUV420888ToNV21(imgYUV420: Image): ByteArray {
-//// Converting YUV_420_888 data to YUV_420_SP (NV21).
-//        val data: ByteArray
-//        val buffer0 = imgYUV420.planes[0].buffer
-//        val buffer2 = imgYUV420.planes[2].buffer
-//        val buffer0_size = buffer0.remaining()
-//        val buffer2_size = buffer2.remaining()
-//        data = ByteArray(buffer0_size + buffer2_size)
-//        buffer0[data, 0, buffer0_size]
-//        buffer2[data, buffer0_size, buffer2_size]
-//        return data
-//    }
-
-
 //    private val ORIENTATIONS = SparseIntArray()
 //    init {
 //        ORIENTATIONS.append(Surface.ROTATION_0, 0)
@@ -430,6 +387,87 @@ class CamService: Service() {
 //        ORIENTATIONS.append(Surface.ROTATION_180, 180)
 //        ORIENTATIONS.append(Surface.ROTATION_270, 270)
 //    }
+
+    fun yuv420ToBitmap(image: Image): Bitmap? {
+        require(image.format == ImageFormat.YUV_420_888) { "Invalid image format" }
+        val imageWidth = image.width
+        val imageHeight = image.height
+        // ARGB array needed by Bitmap static factory method I use below.
+        val argbArray = IntArray(imageWidth * imageHeight)
+        val yBuffer = image.planes[0].buffer
+        yBuffer.position(0)
+
+        // A YUV Image could be implemented with planar or semi planar layout.
+        // A planar YUV image would have following structure:
+        // YYYYYYYYYYYYYYYY
+        // ................
+        // UUUUUUUU
+        // ........
+        // VVVVVVVV
+        // ........
+        //
+        // While a semi-planar YUV image would have layout like this:
+        // YYYYYYYYYYYYYYYY
+        // ................
+        // UVUVUVUVUVUVUVUV   <-- Interleaved UV channel
+        // ................
+        // This is defined by row stride and pixel strides in the planes of the
+        // image.
+
+        // Plane 1 is always U & plane 2 is always V
+        // https://developer.android.com/reference/android/graphics/ImageFormat#YUV_420_888
+        val uBuffer = image.planes[1].buffer
+        uBuffer.position(0)
+        val vBuffer = image.planes[2].buffer
+        vBuffer.position(0)
+
+        // The U/V planes are guaranteed to have the same row stride and pixel
+        // stride.
+        val yRowStride = image.planes[0].rowStride
+        val yPixelStride = image.planes[0].pixelStride
+        val uvRowStride = image.planes[1].rowStride
+        val uvPixelStride = image.planes[1].pixelStride
+        var r: Int
+        var g: Int
+        var b: Int
+        var yValue: Int
+        var uValue: Int
+        var vValue: Int
+        for (y in 0 until imageHeight) {
+            for (x in 0 until imageWidth) {
+                val yIndex = y * yRowStride + x * yPixelStride
+                // Y plane should have positive values belonging to [0...255]
+                yValue = (yBuffer[yIndex] and 0xff.toByte()).toInt()
+                val uvx = x / 2
+                val uvy = y / 2
+                // U/V Values are subsampled i.e. each pixel in U/V chanel in a
+                // YUV_420 image act as chroma value for 4 neighbouring pixels
+                val uvIndex = uvy * uvRowStride + uvx * uvPixelStride
+
+                // U/V values ideally fall under [-0.5, 0.5] range. To fit them into
+                // [0, 255] range they are scaled up and centered to 128.
+                // Operation below brings U/V values to [-128, 127].
+                uValue = (uBuffer[uvIndex] and 0xff.toByte()) - 128
+                vValue = (vBuffer[uvIndex] and 0xff.toByte()) - 128
+
+                // Compute RGB values per formula above.
+                r = (yValue + 1.370705f * vValue).toInt()
+                g = (yValue - 0.698001f * vValue - 0.337633f * uValue).toInt()
+                b = (yValue + 1.732446f * uValue).toInt()
+                r = clamp(r, 0, 255)
+                g = clamp(g, 0, 255)
+                b = clamp(b, 0, 255)
+
+                // Use 255 for alpha value, no transparency. ARGB values are
+                // positioned in each byte of a single 4 byte integer
+                // [AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB]
+                val argbIndex = y * imageWidth + x
+                argbArray[argbIndex] =
+                    255 shl 24 or (r and 255 shl 16) or (g and 255 shl 8) or (b and 255)
+            }
+        }
+        return Bitmap.createBitmap(argbArray, imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
+    }
 
     companion object {
 

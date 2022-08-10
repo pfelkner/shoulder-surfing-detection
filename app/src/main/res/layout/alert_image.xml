@@ -21,7 +21,7 @@
     <!--            app:layout_constraintTop_toTopOf="parent"-->
     <!--            app:layout_constraintStart_toEndOf="parent" />-->
     <ImageView
-            android:id="@+id/alertIconImageView"
+            android:id="@+id/attackerImageView"
             android:layout_width="87dp"
             android:layout_height="65dp"
             android:src="@drawable/common_google_signin_btn_icon_dark_normal"
