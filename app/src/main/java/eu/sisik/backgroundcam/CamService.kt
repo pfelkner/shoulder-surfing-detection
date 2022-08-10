@@ -3,7 +3,6 @@ package eu.sisik.backgroundcam
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.Drawable
@@ -14,7 +13,6 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.util.Size
-import android.util.SparseIntArray
 import android.view.*
 import android.widget.ImageView
 import androidx.core.app.NotificationCompat
@@ -25,7 +23,6 @@ import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.math.absoluteValue
-
 
 /**
  * Copyright (c) 2019 by Roman Sisik. All rights reserved.
@@ -68,8 +65,8 @@ class CamService: Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
         if (intent != null)
-        //Default value is the id of pre selected radio button
-            alertMechanism = AlertMechanism.fromInt(intent?.getIntExtra("selectedAlert", 2131231044))
+        // Default value is the id of pre selected radio button
+            alertMechanism = AlertMechanism.fromInt(intent.getIntExtra("selectedAlert", 2131231044))
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
@@ -130,7 +127,7 @@ class CamService: Service() {
     @SuppressLint("MissingPermission")
     private fun initCam(width: Int, height: Int) {
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-        var camId: String? = getFronFacingCamId()
+        val camId: String? = getFronFacingCamId()
         previewSize = chooseSupportedSize(camId!!, width, height)
         // No Permission check required, done from the main activity
         cameraManager!!.openCamera(camId, stateCallback, null)
@@ -268,7 +265,6 @@ class CamService: Service() {
 //            imgPath = saveToInternalStorage(bitmapImage)
 //            TODO IMPORTANT! figure this out, why is it not calculating orientation correctly?
             img = InputImage.fromMediaImage(image, 270)
-//            img = InputImage.fromMediaImage(image!!, getRotationCompensation(windowManager))
             isProcessing = true
             captureSession!!.capture(captureRequest!!, captureCallback, null)
         }
@@ -336,7 +332,7 @@ class CamService: Service() {
         when (alertMechanism) {
             AlertMechanism.WARNING_SIGN -> setupWarningView(li)
             AlertMechanism.FLASHING_BORDERS -> setupBorderView(li)
-            AlertMechanism.ATTACKER_IMAGE -> null;
+            AlertMechanism.ATTACKER_IMAGE -> null
         }
 
         isWarning = true
@@ -433,24 +429,6 @@ class CamService: Service() {
 //        ORIENTATIONS.append(Surface.ROTATION_90, 90)
 //        ORIENTATIONS.append(Surface.ROTATION_180, 180)
 //        ORIENTATIONS.append(Surface.ROTATION_270, 270)
-//    }
-
-    /**
-     * Get the angle by which an image must be rotated given the device's current
-     * orientation.
-     */
-//    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-//    @Throws(CameraAccessException::class)
-//    private fun getRotationCompensation(wm: WindowManager?): Int {
-//        val deviceRotation = wm?.defaultDisplay?.rotation
-//        var rotationCompensation = ORIENTATIONS[deviceRotation!!]
-//
-//        val sensorOrientation = cameraManager
-//            ?.getCameraCharacteristics(CameraCharacteristics.LENS_FACING_FRONT.toString())
-//            ?.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
-//
-//        return (sensorOrientation + (-rotationCompensation)) % 360
-//
 //    }
 
     companion object {

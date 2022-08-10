@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-
+        val sharedPref = this.getPreferences(Context.MODE_PRIVATE)
         initView()
 
         val permission = Manifest.permission.CAMERA
@@ -101,29 +101,6 @@ class MainActivity : AppCompatActivity() {
         Log.e("RadioSelection", "getSelectedRadio: "+ radioGroup.getCheckedRadioButtonId())
         return radioGroup.getCheckedRadioButtonId()
     }
-
-//    fun onRadioButtonClicked(view: View) {
-//        if (view is RadioButton) {
-//            // Is the button now checked?
-//            val checked = view.isChecked
-//            // Check which radio button was clicked
-//            when (view.getId()) {
-//                R.id.radio_icon ->
-//                    if (checked) {
-//                        // Pirates are the best
-//                    }
-//                R.id.radio_border ->
-//                    if (checked) {
-//                        // Ninjas rule
-//                    }
-////                TODO pre check one button, steup overlay depending on which one is checked
-//                R.id.radio_image ->
-//                    if (checked) {
-//
-//                    }
-//            }
-//        }
-//    }
 
     companion object {
 
