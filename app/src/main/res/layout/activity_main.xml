@@ -17,20 +17,7 @@
             android:layout_marginStart="8dp"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/butStartPreview" />
-
-    <Button
-            android:id="@+id/butStartPreview"
-            android:textSize="22sp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/start_with_preview"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginStart="8dp"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginBottom="32dp"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toTopOf="@+id/butStop" />
 
     <Button
             android:id="@+id/butStop"
@@ -61,7 +48,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Warning Sign"
-                android:onClick="onRadioButtonClicked"
                 android:minHeight="48dp" />
 
         <RadioButton
@@ -69,7 +55,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Flashing Borders"
-                android:onClick="onRadioButtonClicked"
                 android:minHeight="48dp" />
 
         <RadioButton
@@ -77,7 +62,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Attacker Image"
-                android:onClick="onRadioButtonClicked"
                 android:minHeight="48dp" />
     </RadioGroup>
 </androidx.constraintlayout.widget.ConstraintLayout>

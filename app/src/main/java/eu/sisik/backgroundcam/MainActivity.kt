@@ -21,14 +21,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
-    private val receiver = object: BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            when (p1?.action) {
-                CamService.ACTION_STOPPED -> flipButtonVisibility(false)
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -71,29 +63,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initView() {
-
-        butStart.setOnClickListener {
-
-            if (!isServiceRunning(this, CamService::class.java)) {
-                notifyService(CamService.ACTION_START)
-                finish()
+    private val receiver = object: BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            when (p1?.action) {
+                CamService.ACTION_STOPPED -> flipButtonVisibility(false)
             }
         }
+    }
 
-        butStartPreview.setOnClickListener {
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-
-                // Don't have permission to draw over other apps yet - ask user to give permission
-                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                    startActivityForResult(this, CODE_PERM_SYSTEM_ALERT_WINDOW)
-                }
-                return@setOnClickListener
-            }
-
+    private fun initView() {
+        butStart.setOnClickListener {
             if (!isServiceRunning(this, CamService::class.java)) {
-                notifyService(CamService.ACTION_START_WITH_PREVIEW)
+                notifyService(CamService.ACTION_START)
                 finish()
             }
         }
@@ -104,7 +85,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun notifyService(action: String) {
-
         val intent = Intent(this, CamService::class.java)
         intent.action = action
         intent.putExtra("selectedAlert", getSelectedRadio())
@@ -112,9 +92,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun flipButtonVisibility(running: Boolean) {
-
         butStart.visibility =  if (running) View.GONE else View.VISIBLE
-        butStartPreview.visibility =  if (running) View.GONE else View.VISIBLE
         butStop.visibility =  if (running) View.VISIBLE else View.GONE
     }
 
@@ -124,30 +102,28 @@ class MainActivity : AppCompatActivity() {
         return radioGroup.getCheckedRadioButtonId()
     }
 
-    fun onRadioButtonClicked(view: View) {
-        if (view is RadioButton) {
-            // Is the button now checked?
-            val checked = view.isChecked
-
-            // Check which radio button was clicked
-            when (view.getId()) {
-                R.id.radio_icon ->
-                    if (checked) {
-                        // Pirates are the best
-                    }
-                R.id.radio_border ->
-                    if (checked) {
-                        // Ninjas rule
-                    }
-//                TODO pre check one button, steup overlay depending on which one is checked
-                R.id.radio_image ->
-                    if (checked) {
-
-                    }
-            }
-        }
-    }
-
+//    fun onRadioButtonClicked(view: View) {
+//        if (view is RadioButton) {
+//            // Is the button now checked?
+//            val checked = view.isChecked
+//            // Check which radio button was clicked
+//            when (view.getId()) {
+//                R.id.radio_icon ->
+//                    if (checked) {
+//                        // Pirates are the best
+//                    }
+//                R.id.radio_border ->
+//                    if (checked) {
+//                        // Ninjas rule
+//                    }
+////                TODO pre check one button, steup overlay depending on which one is checked
+//                R.id.radio_image ->
+//                    if (checked) {
+//
+//                    }
+//            }
+//        }
+//    }
 
     companion object {
 
