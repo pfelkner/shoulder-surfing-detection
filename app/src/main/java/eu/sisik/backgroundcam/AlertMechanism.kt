@@ -9,4 +9,3 @@ enum class AlertMechanism(val id: Int) {
         fun fromInt(id: Int) = AlertMechanism.values().first { it.id == id }
     }
 }
-
