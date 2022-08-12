@@ -69,7 +69,10 @@ class CamService: Service() {
 
         if (intent != null)
         // Default value is the id of pre selected radio button
-            alertMechanism = AlertMechanism.fromInt(intent.getIntExtra("selectedAlert", 2131231044))
+            Log.e("RADIO ID", "Button id is: "+intent.getIntExtra("selectedAlert", 2131230938))
+        if (intent != null) {
+            alertMechanism = AlertMechanism.fromInt(intent.getIntExtra("selectedAlert", 2131230938))
+        }
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
