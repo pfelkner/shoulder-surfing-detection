@@ -32,6 +32,7 @@ import kotlin.math.absoluteValue
  */
 class CamService: Service() {
 
+    private lateinit var dc: DataCollection
     private lateinit var alertMechanism: AlertMechanism
 
     // UI
@@ -58,6 +59,7 @@ class CamService: Service() {
     override fun onCreate() {
         super.onCreate()
         drawable = resources.getDrawable(R.drawable.ic_baseline_warning_24)
+        dc = DataCollection(this)
         startForeground()
     }
 

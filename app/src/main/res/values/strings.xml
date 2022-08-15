@@ -5,4 +5,5 @@
     <string name="start_with_preview">Start with preview</string>
     <string name="stop">Stop</string>
     <string name="start">Start</string>
+    <string name="accessibility_service_description">accessibility_service_description</string>
 </resources>
