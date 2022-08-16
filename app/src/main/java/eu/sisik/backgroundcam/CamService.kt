@@ -85,6 +85,7 @@ class CamService: Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopCamera()
+        stopService(Intent(this, DetectedActivityService::class.java))
         if (rootView != null)
             wm?.removeView(rootView)
         sendBroadcast(Intent(ACTION_STOPPED))
@@ -281,11 +282,8 @@ class CamService: Service() {
     }
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
-//        val buffer: ByteBuffer = image!!.planes[0].buffer
-//        val bytes = ByteArray(buffer.capacity())
-//        buffer.get(bytes)
-//        val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
-//        imgPath = saveToInternalStorage(bitmapImage)
+        if (MainActivity.Companion.getCurrentActivity() != null)
+            Log.e("------------------", "Acitvity: "+MainActivity.Companion.getCurrentActivity())
         launch {
 //            if (image != null) {
 //                val buffer: ByteBuffer = image!!.planes[0].buffer
@@ -303,7 +301,9 @@ class CamService: Service() {
                 .addOnSuccessListener { faces ->
                     // Task completed successfully
                     // ...
-                    Log.e("########FACES", "Faces detected: "+faces.size)
+                    Log.e("########", "Faces detected: "+faces.size)
+                    Log.e("########", "Mode: "+dc.getRingMode())
+                    Log.e("########", "Date: "+dc.getDateTime())
                     isProcessing = false
                     Log.e("+++++++++", img.toString())
                     if (!isWarning && faces.size > 0) // TODO change to 1 for live version
@@ -337,6 +337,7 @@ class CamService: Service() {
 
     private fun startWarning(image: Image?) {
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        logAttackStart()
         when (alertMechanism) {
             AlertMechanism.WARNING_SIGN -> setupWarningView(li)
             AlertMechanism.FLASHING_BORDERS -> setupBorderView(li)
@@ -348,9 +349,20 @@ class CamService: Service() {
         wm!!.addView(rootView, determineParams())
     }
 
+
+
     private fun stopWarning() {
         rootView?.setVisibility(View.GONE)
         isWarning = false
+        logAttackEnd()
+    }
+
+    private fun logAttackEnd() {
+        Log.e("++++++++++", "Atack End: "+ dc.getDateTime())
+    }
+
+    private fun logAttackStart() {
+        Log.e("++++++++++", "Atack Start: "+ dc.getDateTime())
     }
 
     private fun setupBorderView(li: LayoutInflater) {
