@@ -3,32 +3,40 @@ package eu.sisik.backgroundcam
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.app.PendingIntent
+import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import android.preference.PreferenceManager
 import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.android.gms.location.ActivityRecognitionClient
-import com.google.android.gms.location.ActivityTransition
-import com.google.android.gms.location.ActivityTransitionRequest
-import com.google.android.gms.location.DetectedActivity
+import com.google.android.gms.common.internal.safeparcel.SafeParcelableSerializer
+import com.google.android.gms.location.*
+import eu.sisik.backgroundcam.util.ActivityTransitionsUtil
 import kotlinx.android.synthetic.main.activity_main.*
+import eu.sisik.backgroundcam.util.Constants
+import eu.sisik.backgroundcam.util.Constants.ALERT_MODE_SELECTION
+import pub.devrel.easypermissions.AppSettingsDialog
+import pub.devrel.easypermissions.EasyPermissions
+
 
 const val PERMISSION_REQUEST_ACTIVITY_RECOGNITION = 1000
 const val PERMISSION_REQUEST_CUSTOM = 42069
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
+
+    lateinit var client: ActivityRecognitionClient
+    lateinit var storage: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +45,23 @@ class MainActivity : AppCompatActivity() {
         val sharedPref = this.getPreferences(Context.MODE_PRIVATE)
         initView()
 
-        requestPermission()
+        client = ActivityRecognition.getClient(this)
+        storage = PreferenceManager.getDefaultSharedPreferences(this)
+//        requestPermission()
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            // We don't have camera permission yet. Request it from the user.
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CODE_PERM_CAMERA)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+            && !ActivityTransitionsUtil.hasActivityTransitionPermissions(this)
+        ) {
+            requestActivityTransitionPermission()
+        } else {
+            requestForUpdates()
+        }
+
     }
 
     override fun onResume() {
@@ -51,27 +75,33 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-
+        saveRadioState()
         unregisterReceiver(receiver)
     }
 
     override fun onDestroy() {
 //        removeActivityTransitionUpdates()
 //        stopService(Intent(this, DetectedActivityService::class.java))
+        saveRadioState()
         super.onDestroy()
     }
+//
+//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//
+//        when (requestCode) {
+//            CODE_PERM_CAMERA -> {
+//                if (grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
+//                    Toast.makeText(this, getString(R.string.err_no_cam_permission), Toast.LENGTH_LONG).show()
+//                    finish()
+//                }
+//            }
+//        }
+//    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        when (requestCode) {
-            CODE_PERM_CAMERA -> {
-                if (grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, getString(R.string.err_no_cam_permission), Toast.LENGTH_LONG).show()
-                    finish()
-                }
-            }
-        }
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
     }
 
     private val receiver = object: BroadcastReceiver() {
@@ -84,10 +114,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun initView() {
         butStart.setOnClickListener {
-            if (!isServiceRunning(this, CamService::class.java)) {
-                notifyService(CamService.ACTION_START)
-                finish()
-            }
+//            if (!isServiceRunning(this, CamService::class.java)) {
+//                notifyService(CamService.ACTION_START)
+//                finish()
+//            }
+            sendFakeActivityTransitionEvent()
         }
 
         butStop.setOnClickListener {
@@ -166,5 +197,116 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.ACTIVITY_RECOGNITION
             )
         }
+    }
+
+//    ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
+        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+            AppSettingsDialog.Builder(this).build().show()
+        } else {
+            requestActivityTransitionPermission()
+        }
+    }
+
+    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
+//        switchActivityTransition.isChecked = true
+//        saveRadioState(true)
+        requestForUpdates()
+    }
+
+// moved up to compare to other permission request
+//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
+//    }
+
+    @SuppressLint("MissingPermission") // TODO
+    private fun requestForUpdates() {
+        client
+            .requestActivityTransitionUpdates(
+                ActivityTransitionsUtil.getActivityTransitionRequest(),
+                getPendingIntent()
+            )
+            .addOnSuccessListener {
+                showToast("successful registration")
+            }
+            .addOnFailureListener { e: Exception ->
+                showToast("Unsuccessful registration")
+            }
+    }
+
+    @SuppressLint("MissingPermission") // TODO
+    private fun deregisterForUpdates() {
+        client
+            .removeActivityTransitionUpdates(getPendingIntent())
+            .addOnSuccessListener {
+                getPendingIntent().cancel()
+                showToast("successful deregistration")
+            }
+            .addOnFailureListener { e: Exception ->
+                showToast("unsuccessful deregistration")
+            }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun requestActivityTransitionPermission() {
+        EasyPermissions.requestPermissions(
+            this,
+            "You need to allow activity transition permissions in order to use this feature",
+            Constants.REQUEST_CODE_ACTIVITY_TRANSITION,
+            Manifest.permission.ACTIVITY_RECOGNITION
+        )
+    }
+
+    private fun getPendingIntent(): PendingIntent {
+        val intent = Intent(this, ActivityTransitionReceiver::class.java)
+        return PendingIntent.getBroadcast(
+            this,
+            Constants.REQUEST_CODE_INTENT_ACTIVITY_TRANSITION,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG)
+            .show()
+    }
+
+    private fun saveRadioState() {
+        storage
+            .edit()
+            .putInt(ALERT_MODE_SELECTION, getSelectedRadio())
+            .apply()
+    }
+
+    private fun getRadioState() = storage.getInt(ALERT_MODE_SELECTION, 0)
+
+    fun sendFakeActivityTransitionEvent() {
+        // name your intended recipient class
+        val intent = Intent(this, ActivityTransitionReceiver::class.java)
+
+        val events: ArrayList<ActivityTransitionEvent> = arrayListOf()
+
+        // create fake events
+        events.add(
+            ActivityTransitionEvent(
+                DetectedActivity.ON_BICYCLE,
+                ActivityTransition.ACTIVITY_TRANSITION_ENTER,
+                SystemClock.elapsedRealtimeNanos()
+            )
+        )
+
+        // finally, serialize and send
+        val result = ActivityTransitionResult(events)
+        SafeParcelableSerializer.serializeToIntentExtra(
+            result,
+            intent,
+            "com.google.android.location.internal.EXTRA_ACTIVITY_TRANSITION_RESULT"
+        )
+        this.sendBroadcast(intent)
     }
 }
