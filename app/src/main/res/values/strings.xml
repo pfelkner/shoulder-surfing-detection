@@ -6,4 +6,16 @@
     <string name="stop">Stop</string>
     <string name="start">Start</string>
     <string name="accessibility_service_description">accessibility_service_description</string>
+    <string name="permission_rational_dialog_title">permission_rational_dialog_title</string>
+    <string name="permission_rational_dialog_message">permission_rational_dialog_message</string>
+    <string name="permission_rational_dialog_positive_button_text">permission_rational_dialog_positive_button_text</string>
+    <string name="permission_rational_dialog_negative_button_text">permission_rational_dialog_negative_button_text</string>
+    <string name="activity_update_request_success">activity_update_request_success</string>
+    <string name="activity_update_request_failed">activity_update_request_failed</string>
+    <string name="transition_update_request_success">transition_update_request_success</string>
+    <string name="transition_update_request_failed">transition_update_request_failed</string>
+    <string name="activity_update_remove_success">activity_update_remove_success</string>
+    <string name="activity_update_remove_failed">activity_update_remove_failed</string>
+    <string name="transition_update_remove_success">transition_update_remove_success</string>
+    <string name="transition_update_remove_failed">transition_update_remove_failed</string>
 </resources>
