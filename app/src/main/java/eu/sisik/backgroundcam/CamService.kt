@@ -85,7 +85,6 @@ class CamService: Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopCamera()
-        stopService(Intent(this, DetectedActivityService::class.java))
         if (rootView != null)
             wm?.removeView(rootView)
         sendBroadcast(Intent(ACTION_STOPPED))
@@ -282,8 +281,6 @@ class CamService: Service() {
     }
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
-        if (MainActivity.Companion.getCurrentActivity() != null)
-            Log.e("------------------", "Acitvity: "+MainActivity.Companion.getCurrentActivity())
         launch {
 //            if (image != null) {
 //                val buffer: ByteBuffer = image!!.planes[0].buffer

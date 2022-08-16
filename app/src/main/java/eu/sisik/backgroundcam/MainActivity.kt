@@ -30,14 +30,6 @@ const val PERMISSION_REQUEST_ACTIVITY_RECOGNITION = 1000
 const val PERMISSION_REQUEST_CUSTOM = 42069
 class MainActivity : AppCompatActivity() {
 
-    lateinit var currentActivity: SupportedActivity
-    private var isTrackingStarted = false
-    private val transitionBroadcastReceiver: TransitionsReceiver = TransitionsReceiver().apply {
-        action = { setDetectedActivity(it) }
-    }
-
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -46,23 +38,12 @@ class MainActivity : AppCompatActivity() {
         initView()
 
         requestPermission()
-
-        if (isPermissionGranted()) {
-            startService(Intent(this, DetectedActivityService::class.java))
-            requestActivityTransitionUpdates()
-            isTrackingStarted = true
-            Toast.makeText(this@MainActivity, "You've started activity tracking",
-                Toast.LENGTH_SHORT).show()
-        } else {
-            requestPermission()
-        }
     }
 
     override fun onResume() {
         super.onResume()
 
         registerReceiver(receiver, IntentFilter(CamService.ACTION_STOPPED))
-        registerReceiver(transitionBroadcastReceiver, IntentFilter(TRANSITIONS_RECEIVER_ACTION))
 
         val running = isServiceRunning(this, CamService::class.java)
         flipButtonVisibility(running)
@@ -72,7 +53,6 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
 
         unregisterReceiver(receiver)
-        unregisterReceiver(transitionBroadcastReceiver)
     }
 
     override fun onDestroy() {
@@ -135,24 +115,8 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
 
-        private var currentActivity: SupportedActivity? = null
         const val CODE_PERM_SYSTEM_ALERT_WINDOW = 6111
         const val CODE_PERM_CAMERA = 6112
-
-        fun getCurrentActivity(): SupportedActivity? {
-            return MainActivity.currentActivity
-        }
-    }
-
-
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        if (intent.hasExtra(SUPPORTED_ACTIVITY_KEY)) {
-            val supportedActivity = intent.getSerializableExtra(
-                SUPPORTED_ACTIVITY_KEY) as SupportedActivity
-            setDetectedActivity(supportedActivity)
-        }
     }
 
     private fun showRationalDialog(activity: Activity) {
@@ -202,71 +166,5 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.ACTIVITY_RECOGNITION
             )
         }
-    }
-
-    @SuppressLint("MissingPermission") // TODO
-    fun requestActivityTransitionUpdates() {
-        val request = ActivityTransitionRequest(getActivitiesToTrack())
-        val task = ActivityRecognitionClient(this).requestActivityTransitionUpdates(request,
-            TransitionsReceiver.getPendingIntent(this))
-
-        task.run {
-            addOnSuccessListener {
-                Log.d("TransitionUpdate", getString(R.string.transition_update_request_success))
-            }
-            addOnFailureListener {
-                Log.d("TransitionUpdate", getString(R.string.transition_update_request_failed))
-            }
-        }
-    }
-
-    @SuppressLint("MissingPermission") // TODO
-    private fun removeActivityTransitionUpdates() {
-        val task = ActivityRecognitionClient(this).removeActivityTransitionUpdates(
-            TransitionsReceiver.getPendingIntent(this))
-
-        task.run {
-            addOnSuccessListener {
-                Log.d("TransitionUpdate", getString(R.string.transition_update_remove_success))
-            }
-            addOnFailureListener {
-                Log.d("TransitionUpdate", getString(R.string.transition_update_remove_failed))
-            }
-        }
-    }
-
-    fun getActivitiesToTrack(): List<ActivityTransition> =
-        mutableListOf<ActivityTransition>()
-            .apply {
-                add(ActivityTransition.Builder()
-                    .setActivityType(DetectedActivity.STILL)
-                    .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER)
-                    .build())
-                add(ActivityTransition.Builder()
-                    .setActivityType(DetectedActivity.STILL)
-                    .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_EXIT)
-                    .build())
-                add(ActivityTransition.Builder()
-                    .setActivityType(DetectedActivity.WALKING)
-                    .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER)
-                    .build())
-                add(ActivityTransition.Builder()
-                    .setActivityType(DetectedActivity.WALKING)
-                    .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_EXIT)
-                    .build())
-                add(ActivityTransition.Builder()
-                    .setActivityType(DetectedActivity.RUNNING)
-                    .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER)
-                    .build())
-                add(ActivityTransition.Builder()
-                    .setActivityType(DetectedActivity.RUNNING)
-                    .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_EXIT)
-                    .build())
-            }
-
-    private fun setDetectedActivity(supportedActivity: SupportedActivity) {
-//        currentActivity = supportedActivity
-        MainActivity.Companion.currentActivity = supportedActivity
-        Log.e("**********************", "Activity type is: "+supportedActivity.name)
     }
 }
