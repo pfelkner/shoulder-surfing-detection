@@ -49,6 +49,14 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         client = ActivityRecognition.getClient(this)
         storage = PreferenceManager.getDefaultSharedPreferences(this)
 //        requestPermission()
+
+        switchSnooze.isChecked = false
+        switchSnooze.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                snooze()
+            }
+        }
+
         val radiog = findViewById(R.id.radio) as RadioGroup
         radiog.check(getRadioState())
 
@@ -65,6 +73,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             requestForUpdates()
         }
         checkDrawOverlayPermission()
+    }
+
+    private fun snooze() {
+        TODO("Not yet implemented")
     }
 
     // TODO handle permissions in an uniform way
