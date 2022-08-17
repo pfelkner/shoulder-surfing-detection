@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "548738740037",
+    "project_id": "bachelorthesis-5c4df",
+    "storage_bucket": "bachelorthesis-5c4df.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548738740037:android:b2968a991fefb981f7d82c",
+        "android_client_info": {
+          "package_name": "com.pfelkner.bachelorthesis"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "548738740037-7eandom6dqmt3rqfgdinf9tqdu55k176.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQqJw_FLTCEsTfvSGqH_gIUgQEFc-usrY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "548738740037-7eandom6dqmt3rqfgdinf9tqdu55k176.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

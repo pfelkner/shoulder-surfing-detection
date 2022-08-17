@@ -19,20 +19,18 @@ import android.view.*
 import android.widget.ImageView
 import androidx.core.app.NotificationCompat
 import androidx.core.math.MathUtils.clamp
+import com.google.firebase.Timestamp
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.pfelkner.bachelorthesis.DataCollection.Companion.SOURCE_START
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.experimental.and
 import kotlin.math.absoluteValue
 
-
-/**
- * Copyright (c) 2019 by Roman Sisik. All rights reserved.
- */
 class CamService: Service() {
 
     private var snoozing: Boolean = false
@@ -76,6 +74,7 @@ class CamService: Service() {
         super.onCreate()
         drawable = resources.getDrawable(R.drawable.ic_baseline_warning_24)
         dc = DataCollection(this)
+        dc.setInstallationId()
         startForeground()
     }
 
@@ -338,9 +337,11 @@ class CamService: Service() {
                     isProcessing = false
                     Log.e("+++++++++", img.toString())
                     if (!isWarning && faces.size > 0 && !isSnoozing()) // TODO change to 1 for live version
+                        logDetectionStart()
                         startWarning(image)
                     if (isWarning && faces.size == 0 || isSnoozing()) { // TODO change to 1 for live version
 //                        TODO while capturing data make sure to store if stop bc attack or snooze
+//                        logDetectionEnd()
                         stopWarning()
                     }
                 }
@@ -355,6 +356,42 @@ class CamService: Service() {
                     image?.close()
                 }
         }
+    }
+//
+//    private fun logDetectionEnd() {
+//        TODO("Not yet implemented")
+//
+//    }
+
+    private fun logDetectionStart() {
+        dc.writeDataOnFirestore(
+            Entry(
+                dc.getInstallationId(),
+                SOURCE_START,
+                dc.getDateTime(),
+                Timestamp.now(),
+                dc.getRingMode(),
+                "",
+                dc.getCurrentActivity(),
+                dc.getCurrentTransition(),
+                snoozing
+            ))
+    }
+
+    data class Entry(
+        var id : String = "",
+        var source: String,
+        var date: String = "",
+        var created: Timestamp,
+        var ringMode: Int = -1,
+        var ringModeDesc: String = "",
+        var activity: String = "",
+        var activityTransition: String = "",
+        var snoozing: Boolean
+        )
+
+    private fun logSnoozeStart() {
+        Log.e("++++++++++", "Snooze Start: "+ dc.getDateTime())
     }
 
     private fun getFaceDetector(): FaceDetector {
@@ -395,10 +432,6 @@ class CamService: Service() {
 
     private fun logAttackStart() {
         Log.e("++++++++++", "Atack Start: "+ dc.getDateTime())
-    }
-
-    private fun logSnoozeStart() {
-        Log.e("++++++++++", "Snooze Start: "+ dc.getDateTime())
     }
 
     private fun setupBorderView(li: LayoutInflater) {
