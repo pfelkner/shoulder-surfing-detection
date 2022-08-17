@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable
 import android.hardware.camera2.*
 import android.media.Image
 import android.media.ImageReader
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -56,6 +57,17 @@ class CamService: Service() {
     private var isWarning: Boolean = false
     private var windowManager: WindowManager? = null
 
+    var mBinder: IBinder = LocalBinder()
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return mBinder
+    }
+
+    class LocalBinder : Binder() {
+        val camServiceInstance: LocalBinder
+            get() = this
+    }
+
     override fun onCreate() {
         super.onCreate()
         drawable = resources.getDrawable(R.drawable.ic_baseline_warning_24)
@@ -63,9 +75,9 @@ class CamService: Service() {
         startForeground()
     }
 
-    override fun onBind(p0: Intent?): IBinder? {
-        return null
-    }
+//    override fun onBind(p0: Intent?): IBinder? {
+//        return null
+//    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
@@ -79,6 +91,7 @@ class CamService: Service() {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
         }
+//        snooze()
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -114,6 +127,11 @@ class CamService: Service() {
             .setContentIntent(intent)
             .setTicker(getText(R.string.app_name))
             .build()
+    }
+
+
+    fun snooze() {
+        TODO("Not yet implemented")
     }
 
     private fun stopCamera() {

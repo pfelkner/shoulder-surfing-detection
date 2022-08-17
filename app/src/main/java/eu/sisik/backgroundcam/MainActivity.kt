@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.os.SystemClock
 import android.preference.PreferenceManager
 import android.provider.Settings
@@ -27,6 +28,7 @@ import com.google.android.gms.location.*
 import eu.sisik.backgroundcam.util.ActivityTransitionsUtil
 import eu.sisik.backgroundcam.util.Constants
 import eu.sisik.backgroundcam.util.Constants.ALERT_MODE_SELECTION
+import eu.sisik.backgroundcam.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
@@ -34,10 +36,12 @@ import pub.devrel.easypermissions.EasyPermissions
 
 const val PERMISSION_REQUEST_ACTIVITY_RECOGNITION = 1000
 const val PERMISSION_REQUEST_CUSTOM = 42069
+lateinit var storage: SharedPreferences
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
+    private var bound: Boolean = false
+    private var camService : CamService.LocalBinder? = null
     lateinit var client: ActivityRecognitionClient
-    lateinit var storage: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,10 +54,14 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         storage = PreferenceManager.getDefaultSharedPreferences(this)
 //        requestPermission()
 
-        switchSnooze.isChecked = false
+//        switchSnooze.isChecked = false
         switchSnooze.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
+//            saveSwitchState(isChecked)
+            if (isChecked && isServiceRunning(this, CamService::class.java) && bound) {
                 snooze()
+            } else {
+                showToast("Service isn't running")
+                switchSnooze.isChecked = false
             }
         }
 
@@ -73,10 +81,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             requestForUpdates()
         }
         checkDrawOverlayPermission()
-    }
-
-    private fun snooze() {
-        TODO("Not yet implemented")
     }
 
     // TODO handle permissions in an uniform way
@@ -160,11 +164,30 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     private fun notifyService(action: String) {
-        val intent = Intent(this, CamService::class.java)
-        intent.action = action
-        intent.putExtra("selectedAlert", getSelectedRadio())
-        startService(intent)
+        val startIntent = Intent(this, CamService::class.java)
+        startIntent.action = action
+        startIntent.putExtra("selectedAlert", getSelectedRadio())
+        startService(startIntent)
+        val bindIntent = Intent(this, CamService::class.java)
+        bindService(bindIntent, mConnection, BIND_AUTO_CREATE)
     }
+
+    var mConnection: ServiceConnection = object : ServiceConnection {
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            showToast("Service is disconnected")
+            bound = false
+            camService = null
+        }
+
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            showToast("Service is connected")
+            bound = true
+            val mLocalBinder: CamService.LocalBinder = service as CamService.LocalBinder
+            camService = mLocalBinder.camServiceInstance
+        }
+    }
+
 
     private fun flipButtonVisibility(running: Boolean) {
         butStart.visibility =  if (running) View.GONE else View.VISIBLE
@@ -317,6 +340,15 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     private fun getRadioState() = storage.getInt(ALERT_MODE_SELECTION, getSelectedRadio())
+
+    fun saveSwitchState(state: Boolean) {
+        storage
+            .edit()
+            .putBoolean(Constants.SNOOZE_SELECTION, state)
+            .apply()
+    }
+
+    private fun getSwitchState() = storage.getBoolean(SNOOZE_SELECTION, false)
 
     fun onRadioButtonClicked(view: View) {
         if (view is RadioButton) {

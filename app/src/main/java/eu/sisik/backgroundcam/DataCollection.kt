@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Context
 import android.media.AudioManager
 import android.util.Log
+import eu.sisik.backgroundcam.util.Constants
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -23,10 +24,7 @@ class DataCollection constructor(context: Context){
 
     fun getDateTime(): String {
         val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
-        val currentDate = sdf.format(Date())
-        Log.i("MyApp", "Date: "+currentDate)
-
-        return currentDate
+        return sdf.format(Date())
     }
 
 
