@@ -7,10 +7,7 @@ import android.app.PendingIntent
 import android.content.*
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.IBinder
-import android.os.SystemClock
+import android.os.*
 import android.preference.PreferenceManager
 import android.provider.Settings
 import android.util.Log
@@ -28,6 +25,7 @@ import com.google.android.gms.location.*
 import eu.sisik.backgroundcam.util.ActivityTransitionsUtil
 import eu.sisik.backgroundcam.util.Constants
 import eu.sisik.backgroundcam.util.Constants.ALERT_MODE_SELECTION
+import eu.sisik.backgroundcam.util.Constants.SNOOZE_DURATION
 import eu.sisik.backgroundcam.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
 import pub.devrel.easypermissions.AppSettingsDialog
@@ -40,7 +38,7 @@ lateinit var storage: SharedPreferences
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     private var bound: Boolean = false
-    private var camService : CamService.LocalBinder? = null
+    private var camService : CamService? = null
     lateinit var client: ActivityRecognitionClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,15 +52,20 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         storage = PreferenceManager.getDefaultSharedPreferences(this)
 //        requestPermission()
 
-//        switchSnooze.isChecked = false
+        switchSnooze.isChecked = getSwitchState()
         switchSnooze.setOnCheckedChangeListener { _, isChecked ->
 //            saveSwitchState(isChecked)
-            if (isChecked && isServiceRunning(this, CamService::class.java) && bound) {
-                snooze()
+            if (isChecked && isServiceRunning(this, CamService::class.java)) {
+                Log.e("HELP", ("'*'*'*"+ camService == null).toString())
+                camService?.snooze()
+                Handler().postDelayed({
+                    switchSnooze.isChecked = false
+                }, SNOOZE_DURATION.toLong())
             } else {
                 showToast("Service isn't running")
                 switchSnooze.isChecked = false
             }
+            saveSwitchState(switchSnooze.isChecked)
         }
 
         val radiog = findViewById(R.id.radio) as RadioGroup
@@ -106,6 +109,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         super.onResume()
 
         registerReceiver(receiver, IntentFilter(CamService.ACTION_STOPPED))
+
+        if (isServiceRunning(this, CamService::class.java)) {
+            val bindIntent = Intent(this, CamService::class.java)
+            bindService(bindIntent, mConnection, BIND_AUTO_CREATE)
+        }
 
         val running = isServiceRunning(this, CamService::class.java)
         flipButtonVisibility(running)
@@ -160,6 +168,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
         butStop.setOnClickListener {
             stopService(Intent(this, CamService::class.java))
+            if (bound) {
+                unbindService(mConnection)
+                bound = false
+            }
         }
     }
 
@@ -184,7 +196,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             showToast("Service is connected")
             bound = true
             val mLocalBinder: CamService.LocalBinder = service as CamService.LocalBinder
-            camService = mLocalBinder.camServiceInstance
+            camService = mLocalBinder.getCamService()
         }
     }
 

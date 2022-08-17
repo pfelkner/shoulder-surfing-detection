@@ -11,6 +11,7 @@ import android.media.Image
 import android.media.ImageReader
 import android.os.Binder
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.util.Size
@@ -22,6 +23,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import eu.sisik.backgroundcam.util.Constants.SNOOZE_DURATION
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.experimental.and
@@ -33,6 +35,7 @@ import kotlin.math.absoluteValue
  */
 class CamService: Service() {
 
+    private var snoozing: Boolean = false
     private lateinit var dc: DataCollection
     private lateinit var alertMechanism: AlertMechanism
 
@@ -63,9 +66,10 @@ class CamService: Service() {
         return mBinder
     }
 
-    class LocalBinder : Binder() {
-        val camServiceInstance: LocalBinder
-            get() = this
+    inner class LocalBinder : Binder() {
+        fun getCamService() : CamService {
+            return this@CamService
+        }
     }
 
     override fun onCreate() {
@@ -131,7 +135,17 @@ class CamService: Service() {
 
 
     fun snooze() {
-        TODO("Not yet implemented")
+        logSnoozeStart()
+        snoozing = true
+        if (rootView != null)
+            rootView?.setVisibility(View.GONE)
+        Handler().postDelayed({
+            snoozing = false
+        }, SNOOZE_DURATION.toLong())
+    }
+
+    private fun isSnoozing(): Boolean {
+        return snoozing == true
     }
 
     private fun stopCamera() {
@@ -323,9 +337,10 @@ class CamService: Service() {
                         Log.e("########", "Date: "+dc.getCurrentActivity())
                     isProcessing = false
                     Log.e("+++++++++", img.toString())
-                    if (!isWarning && faces.size > 0) // TODO change to 1 for live version
+                    if (!isWarning && faces.size > 0 && !isSnoozing()) // TODO change to 1 for live version
                         startWarning(image)
-                    if (isWarning && faces.size == 0) { // TODO change to 1 for live version
+                    if (isWarning && faces.size == 0 || isSnoozing()) { // TODO change to 1 for live version
+//                        TODO while capturing data make sure to store if stop bc attack or snooze
                         stopWarning()
                     }
                 }
@@ -380,6 +395,10 @@ class CamService: Service() {
 
     private fun logAttackStart() {
         Log.e("++++++++++", "Atack Start: "+ dc.getDateTime())
+    }
+
+    private fun logSnoozeStart() {
+        Log.e("++++++++++", "Snooze Start: "+ dc.getDateTime())
     }
 
     private fun setupBorderView(li: LayoutInflater) {
