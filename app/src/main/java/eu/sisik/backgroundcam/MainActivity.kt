@@ -6,6 +6,7 @@ import android.app.Activity
 import android.app.PendingIntent
 import android.content.*
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
@@ -13,7 +14,6 @@ import android.preference.PreferenceManager
 import android.provider.Settings
 import android.util.Log
 import android.view.View
-import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -24,9 +24,9 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.common.internal.safeparcel.SafeParcelableSerializer
 import com.google.android.gms.location.*
 import eu.sisik.backgroundcam.util.ActivityTransitionsUtil
-import kotlinx.android.synthetic.main.activity_main.*
 import eu.sisik.backgroundcam.util.Constants
 import eu.sisik.backgroundcam.util.Constants.ALERT_MODE_SELECTION
+import kotlinx.android.synthetic.main.activity_main.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -61,7 +61,26 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         } else {
             requestForUpdates()
         }
+        checkDrawOverlayPermission()
+    }
 
+    // TODO handle permissions in an uniform way
+    fun checkDrawOverlayPermission() {
+        /** check if we already  have permission to draw over other apps  */
+        if (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                !Settings.canDrawOverlays(this)
+            } else {
+                TODO("VERSION.SDK_INT < M")
+            }
+        ) {
+            /** if not construct intent to request permission  */
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            /** request permission via start activity for result  */
+            startActivityForResult(intent, 101010)
+        }
     }
 
     override fun onResume() {
