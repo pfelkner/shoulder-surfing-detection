@@ -1,4 +1,4 @@
-package eu.sisik.backgroundcam
+package com.pfelkner.bachelorthesis
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4

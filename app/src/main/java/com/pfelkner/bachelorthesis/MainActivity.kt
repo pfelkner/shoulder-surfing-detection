@@ -1,4 +1,4 @@
-package eu.sisik.backgroundcam
+package com.pfelkner.bachelorthesis
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -22,11 +22,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.common.internal.safeparcel.SafeParcelableSerializer
 import com.google.android.gms.location.*
-import eu.sisik.backgroundcam.util.ActivityTransitionsUtil
-import eu.sisik.backgroundcam.util.Constants
-import eu.sisik.backgroundcam.util.Constants.ALERT_MODE_SELECTION
-import eu.sisik.backgroundcam.util.Constants.SNOOZE_DURATION
-import eu.sisik.backgroundcam.util.Constants.SNOOZE_SELECTION
+import com.pfelkner.bachelorthesis.util.ActivityTransitionsUtil
+import com.pfelkner.bachelorthesis.util.Constants
+import com.pfelkner.bachelorthesis.util.Constants.ALERT_MODE_SELECTION
+import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
+import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions

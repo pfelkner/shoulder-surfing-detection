@@ -1,10 +1,9 @@
-package eu.sisik.backgroundcam
+package com.pfelkner.bachelorthesis
 
 import android.app.Service
 import android.content.Context
 import android.media.AudioManager
 import android.util.Log
-import eu.sisik.backgroundcam.util.Constants
 import java.text.SimpleDateFormat
 import java.util.*
 

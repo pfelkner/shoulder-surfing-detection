@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="eu.sisik.backgroundcam">
+          package="com.pfelkner.bachelorthesis">
 
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
@@ -17,9 +17,9 @@
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
 
-        <service android:name=".CamService"/>
+        <service android:name="com.pfelkner.bachelorthesis.CamService"/>
 
-        <activity android:name=".MainActivity">
+        <activity android:name="com.pfelkner.bachelorthesis.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -27,7 +27,7 @@
             </intent-filter>
         </activity>
         <receiver
-                android:name=".ActivityTransitionReceiver"
+                android:name="com.pfelkner.bachelorthesis.ActivityTransitionReceiver"
                 android:exported="false"
                 android:permission="com.google.android.gms.permission.ACTIVITY_RECOGNITION">
             <intent-filter>

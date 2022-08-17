@@ -1,16 +1,16 @@
-package eu.sisik.backgroundcam
+package com.pfelkner.bachelorthesis
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import com.google.android.gms.location.ActivityTransitionResult
-import eu.sisik.backgroundcam.DataCollection.Companion.setActivityType
-import eu.sisik.backgroundcam.DataCollection.Companion.setTransitionType
+import com.pfelkner.bachelorthesis.DataCollection.Companion.setActivityType
+import com.pfelkner.bachelorthesis.DataCollection.Companion.setTransitionType
 import java.text.SimpleDateFormat
 import java.util.*
-import eu.sisik.backgroundcam.util.ActivityTransitionsUtil
-import eu.sisik.backgroundcam.util.Constants
+import com.pfelkner.bachelorthesis.util.ActivityTransitionsUtil
+import com.pfelkner.bachelorthesis.util.Constants
 import io.karn.notify.Notify
 
 

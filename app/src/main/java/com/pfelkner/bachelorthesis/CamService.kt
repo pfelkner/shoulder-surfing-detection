@@ -1,4 +1,4 @@
-package eu.sisik.backgroundcam
+package com.pfelkner.bachelorthesis
 
 import android.annotation.SuppressLint
 import android.app.*
@@ -23,7 +23,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import eu.sisik.backgroundcam.util.Constants.SNOOZE_DURATION
+import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.experimental.and

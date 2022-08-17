@@ -1,4 +1,4 @@
-package eu.sisik.backgroundcam.util
+package com.pfelkner.bachelorthesis.util
 
 import android.Manifest
 import android.content.Context

@@ -1,4 +1,4 @@
-package eu.sisik.backgroundcam.util
+package com.pfelkner.bachelorthesis.util
 
 object Constants {
     const val REQUEST_CODE_ACTIVITY_TRANSITION = 123

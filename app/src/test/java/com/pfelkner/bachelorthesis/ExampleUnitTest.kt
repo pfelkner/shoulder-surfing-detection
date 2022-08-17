@@ -1,4 +1,4 @@
-package eu.sisik.backgroundcam
+package com.pfelkner.bachelorthesis
 
 import org.junit.Test
 

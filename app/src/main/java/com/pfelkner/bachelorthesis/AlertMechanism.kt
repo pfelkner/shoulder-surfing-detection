@@ -1,4 +1,4 @@
-package eu.sisik.backgroundcam
+package com.pfelkner.bachelorthesis
 
 enum class AlertMechanism(val id: Int) {
     WARNING_SIGN(2131230938),
