@@ -29,4 +29,25 @@ class DataCollection constructor(context: Context){
         return currentDate
     }
 
+
+    fun getCurrentActivity(): String? {
+        return currentActivity
+    }
+
+    fun getCurrentTransition(): String? {
+        return currentTransition
+    }
+
+    companion object {
+        private var currentActivity: String? = null
+        private var currentTransition: String? = null
+
+        fun setActivityType(newActivity: String) {
+            currentActivity = newActivity
+        }
+        fun setTransitionType(transition: String) {
+            currentTransition = transition
+        }
+    }
+
 }

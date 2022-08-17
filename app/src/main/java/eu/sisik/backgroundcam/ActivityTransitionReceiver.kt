@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import com.google.android.gms.location.ActivityTransitionResult
+import eu.sisik.backgroundcam.DataCollection.Companion.setActivityType
+import eu.sisik.backgroundcam.DataCollection.Companion.setTransitionType
 import java.text.SimpleDateFormat
 import java.util.*
 import eu.sisik.backgroundcam.util.ActivityTransitionsUtil
@@ -19,11 +21,14 @@ class ActivityTransitionReceiver: BroadcastReceiver() {
             result?.let {
                 result.transitionEvents.forEach { event ->
                     //Info for debugging purposes
+                    val activityType = ActivityTransitionsUtil.toActivityString(event.activityType)
+                    val transitionType = ActivityTransitionsUtil.toTransitionType(event.transitionType)
+                    setActivityType(activityType)
+                    setTransitionType(transitionType)
                     val info =
-                        "Transition: " + ActivityTransitionsUtil.toActivityString(event.activityType) +
-                                " (" + ActivityTransitionsUtil.toTransitionType(event.transitionType) + ")" + "   " +
-                                SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-
+                        "Transition: " + activityType +
+                                " (" + transitionType +")" + "   " +
+                                SimpleDateFormat("HH:mm:ss", Locale.GERMAN).format(Date())
 
                     Notify
                         .with(context)
@@ -31,9 +36,7 @@ class ActivityTransitionReceiver: BroadcastReceiver() {
                             title = "Activity Detected"
                             text =
                                 "I can see you are in ${
-                                    ActivityTransitionsUtil.toActivityString(
-                                        event.activityType
-                                    )
+                                    activityType
                                 } state"
                         }
                         .show(id = Constants.ACTIVITY_TRANSITION_NOTIFICATION_ID)

@@ -81,7 +81,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     override fun onDestroy() {
 //        removeActivityTransitionUpdates()
-//        stopService(Intent(this, DetectedActivityService::class.java))
         saveRadioState()
         super.onDestroy()
     }
@@ -114,10 +113,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     private fun initView() {
         butStart.setOnClickListener {
-//            if (!isServiceRunning(this, CamService::class.java)) {
-//                notifyService(CamService.ACTION_START)
-//                finish()
-//            }
+            if (!isServiceRunning(this, CamService::class.java)) {
+                notifyService(CamService.ACTION_START)
+                finish()
+            }
             sendFakeActivityTransitionEvent()
         }
 

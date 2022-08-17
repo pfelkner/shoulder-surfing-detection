@@ -301,6 +301,8 @@ class CamService: Service() {
                     Log.e("########", "Faces detected: "+faces.size)
                     Log.e("########", "Mode: "+dc.getRingMode())
                     Log.e("########", "Date: "+dc.getDateTime())
+                    if (dc.getCurrentActivity() != null)
+                        Log.e("########", "Date: "+dc.getCurrentActivity())
                     isProcessing = false
                     Log.e("+++++++++", img.toString())
                     if (!isWarning && faces.size > 0) // TODO change to 1 for live version
