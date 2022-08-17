@@ -14,6 +14,7 @@ import android.preference.PreferenceManager
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -48,6 +49,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         client = ActivityRecognition.getClient(this)
         storage = PreferenceManager.getDefaultSharedPreferences(this)
 //        requestPermission()
+        val radiog = findViewById(R.id.radio) as RadioGroup
+        radiog.check(getRadioState())
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             // We don't have camera permission yet. Request it from the user.
@@ -94,13 +97,13 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     override fun onPause() {
         super.onPause()
-        saveRadioState()
+        saveRadioState(getSelectedRadio())
         unregisterReceiver(receiver)
     }
 
     override fun onDestroy() {
 //        removeActivityTransitionUpdates()
-        saveRadioState()
+        saveRadioState(getSelectedRadio())
         super.onDestroy()
     }
 //
@@ -294,14 +297,20 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             .show()
     }
 
-    private fun saveRadioState() {
+    private fun saveRadioState(id: Int) {
         storage
             .edit()
-            .putInt(ALERT_MODE_SELECTION, getSelectedRadio())
+            .putInt(ALERT_MODE_SELECTION, id)
             .apply()
     }
 
-    private fun getRadioState() = storage.getInt(ALERT_MODE_SELECTION, 0)
+    private fun getRadioState() = storage.getInt(ALERT_MODE_SELECTION, getSelectedRadio())
+
+    fun onRadioButtonClicked(view: View) {
+        if (view is RadioButton) {
+            saveRadioState(view.id)
+        }
+    }
 
     fun sendFakeActivityTransitionEvent() {
         // name your intended recipient class

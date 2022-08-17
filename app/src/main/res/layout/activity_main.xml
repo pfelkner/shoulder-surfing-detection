@@ -48,21 +48,24 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Warning Sign"
-                android:minHeight="48dp" />
+                android:minHeight="48dp"
+                android:onClick="onRadioButtonClicked"/>
 
         <RadioButton
                 android:id="@+id/radio_border"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Flashing Borders"
-                android:minHeight="48dp" />
+                android:minHeight="48dp"
+                android:onClick="onRadioButtonClicked"/>
 
         <RadioButton
                 android:id="@+id/radio_image"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Attacker Image"
-                android:minHeight="48dp" />
+                android:minHeight="48dp"
+                android:onClick="onRadioButtonClicked"/>
     </RadioGroup>
 
     <TextView
