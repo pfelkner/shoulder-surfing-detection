@@ -4,16 +4,22 @@ import android.app.Service
 import android.content.Context
 import android.media.AudioManager
 import android.util.Log
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.installations.FirebaseInstallations
 import com.pfelkner.bachelorthesis.CamService.Companion.TAG
 import java.text.SimpleDateFormat
 import java.util.*
-import com.pfelkner.bachelorthesis.CamService.Entry
+import kotlin.collections.ArrayList
 
 class DataCollection constructor(context: Context){
     val context = context
     private val db : FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val dbRef : DocumentReference = db.collection("Entries").document("Test")
+    private val docRef : DocumentReference = db.document("Entries/Test")
+    var entries : MutableList<Entry> = mutableListOf()
+    var newEntries : MutableList<(HashMap<String, Any>)> = mutableListOf()
 
     fun setInstallationId() {
         FirebaseInstallations.getInstance().id.addOnCompleteListener { task ->
@@ -67,7 +73,8 @@ class DataCollection constructor(context: Context){
         var currentActivity: String? = null
         private var currentTransition: String? = null
         private  var installationId : String? = null
-        const val SOURCE_START = "Detection Started"
+        const val EVENT_START = "Detection Started"
+        const val EVENT_END = "Detection Ended"
 
         fun setActivityType(newActivity: String) {
             currentActivity = newActivity
@@ -78,22 +85,73 @@ class DataCollection constructor(context: Context){
 
     }
 
-    fun writeDataOnFirestore(entry: Entry){
+    data class Entry(
+        var id : String = "",
+        var source: String,
+        var alertMode : String,
+        var date: String = "",
+        var created: Timestamp,
+        var ringMode: Int = -1,
+        var ringModeDesc: String = "",
+        var activity: String = "",
+        var activityTransition: String = "",
+        var snoozing: Boolean
+    )
+
+    data class Entries(
+        var test: ArrayList<Entry>
+    )
+
+    fun logEvent(event : Trigger, alertMechanism: AlertMechanism, snoozing: Boolean) {
+        val newEntry : Entry = Entry(
+            getInstallationId(),
+            event.toString(),
+            alertMechanism.toString(),
+            getDateTime(),
+            Timestamp.now(),
+            getRingMode(),
+            "",
+            getCurrentActivity(),
+            getCurrentTransition(),
+            snoozing
+        )
+//        dbWrite(newEntry)
+        entries.add(newEntry)
+    }
+
+    enum class Trigger {
+        ATTACK_DETECTED,
+        DETECTION_END,
+        SNOOZED
+    }
+
+//    fun dbWritePatch() {
+//        val new : Entries = Entries(arrayListOf(entries))
+//    }
+
+
+
+    fun dbWrite(entry: Entry){
+
         val newEntry = HashMap<String, Any>()
-        newEntry["id"] = entry.id
-        newEntry["source"] = entry.source
-        newEntry["date"] = entry.date
-        newEntry["timestamp"] = entry.created
-        newEntry["ringMode"] = entry.ringMode
-        newEntry["ringModeDesc"] = entry.ringModeDesc
-        newEntry["ringModeDesc"] = entry.ringModeDesc
-        newEntry["activity"] = entry.activity
-        newEntry["activityTransition"] = entry.activityTransition
-        newEntry["snoozing"] = entry.snoozing
-        db.collection("student_info").document()
-            .set(newEntry)
+            newEntry["id"] = entry.id
+            newEntry["source"] = entry.source
+            newEntry["date"] = entry.date
+            newEntry["timestamp"] = entry.created
+            newEntry["ringMode"] = entry.ringMode
+            newEntry["ringModeDesc"] = entry.ringModeDesc
+            newEntry["ringModeDesc"] = entry.ringModeDesc
+            newEntry["activity"] = entry.activity
+            newEntry["activityTransition"] = entry.activityTransition
+            newEntry["snoozing"] = entry.snoozing
+            newEntries.add(newEntry)
+            Log.e("!!!", newEntry.toString())
+
+        db.collection("Entries_" + getInstallationId()).document()
+            .set(entry)
             .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully written!") }
             .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }
+        Log.e("!!!", newEntry.toString())
     }
 
 }

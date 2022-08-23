@@ -19,12 +19,10 @@ import android.view.*
 import android.widget.ImageView
 import androidx.core.app.NotificationCompat
 import androidx.core.math.MathUtils.clamp
-import com.google.firebase.Timestamp
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import com.pfelkner.bachelorthesis.DataCollection.Companion.SOURCE_START
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -100,6 +98,8 @@ class CamService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+//        dc.saveLog()
+        Log.e("#*+#*+", "Amount of Logs: " + dc.entries.size)
         stopCamera()
         if (rootView != null)
             wm?.removeView(rootView)
@@ -130,21 +130,6 @@ class CamService: Service() {
             .setContentIntent(intent)
             .setTicker(getText(R.string.app_name))
             .build()
-    }
-
-
-    fun snooze() {
-        logSnoozeStart()
-        snoozing = true
-        if (rootView != null)
-            rootView?.setVisibility(View.GONE)
-        Handler().postDelayed({
-            snoozing = false
-        }, SNOOZE_DURATION.toLong())
-    }
-
-    private fun isSnoozing(): Boolean {
-        return snoozing == true
     }
 
     private fun stopCamera() {
@@ -313,35 +298,16 @@ class CamService: Service() {
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
         launch {
-//            if (image != null) {
-//                val buffer: ByteBuffer = image!!.planes[0].buffer
-//                val bytes = ByteArray(buffer.capacity()-1)
-//                buffer.get(bytes)
-////                val image_data = convertYUV420888ToNV21(image)
-//                val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-//                delay(1000L)
-//                if (bitmapImage != null)
-//                    imgPath = saveToInternalStorage(bitmapImage)
-//            }
-//            val faceDetector = FaceDetection.getClient()
             Log.e("IMG", "IMG: "+ img.rotationDegrees)
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
-                    // Task completed successfully
-                    // ...
-                    Log.e("########", "Faces detected: "+faces.size)
-                    Log.e("########", "Mode: "+dc.getRingMode())
-                    Log.e("########", "Date: "+dc.getDateTime())
-                    if (dc.getCurrentActivity() != null)
-                        Log.e("########", "Date: "+dc.getCurrentActivity())
                     isProcessing = false
-                    Log.e("+++++++++", img.toString())
-                    if (!isWarning && faces.size > 0 && !isSnoozing()) // TODO change to 1 for live version
-                        logDetectionStart()
-                        startWarning(image)
+                    if (!isWarning && faces.size > 0) // TODO change to 1 for live version
+                        if (!isSnoozing())
+                            startWarning(image)
+                        dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
                     if (isWarning && faces.size == 0 || isSnoozing()) { // TODO change to 1 for live version
-//                        TODO while capturing data make sure to store if stop bc attack or snooze
-//                        logDetectionEnd()
+                        dc.logEvent(DataCollection.Trigger.DETECTION_END, alertMechanism, snoozing)
                         stopWarning()
                     }
                 }
@@ -357,41 +323,10 @@ class CamService: Service() {
                 }
         }
     }
-//
-//    private fun logDetectionEnd() {
-//        TODO("Not yet implemented")
-//
-//    }
-
-    private fun logDetectionStart() {
-        dc.writeDataOnFirestore(
-            Entry(
-                dc.getInstallationId(),
-                SOURCE_START,
-                dc.getDateTime(),
-                Timestamp.now(),
-                dc.getRingMode(),
-                "",
-                dc.getCurrentActivity(),
-                dc.getCurrentTransition(),
-                snoozing
-            ))
-    }
-
-    data class Entry(
-        var id : String = "",
-        var source: String,
-        var date: String = "",
-        var created: Timestamp,
-        var ringMode: Int = -1,
-        var ringModeDesc: String = "",
-        var activity: String = "",
-        var activityTransition: String = "",
-        var snoozing: Boolean
-        )
 
     private fun logSnoozeStart() {
         Log.e("++++++++++", "Snooze Start: "+ dc.getDateTime())
+        dc.logEvent(DataCollection.Trigger.SNOOZED, alertMechanism, snoozing)
     }
 
     private fun getFaceDetector(): FaceDetector {
@@ -406,7 +341,6 @@ class CamService: Service() {
 
     private fun startWarning(image: Image?) {
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        logAttackStart()
         when (alertMechanism) {
             AlertMechanism.WARNING_SIGN -> setupWarningView(li)
             AlertMechanism.FLASHING_BORDERS -> setupBorderView(li)
@@ -418,20 +352,23 @@ class CamService: Service() {
         wm!!.addView(rootView, determineParams())
     }
 
-
-
     private fun stopWarning() {
         rootView?.setVisibility(View.GONE)
         isWarning = false
-        logAttackEnd()
     }
 
-    private fun logAttackEnd() {
-        Log.e("++++++++++", "Atack End: "+ dc.getDateTime())
+    fun snooze() {
+        snoozing = true
+        dc.logEvent(DataCollection.Trigger.SNOOZED, alertMechanism, snoozing)
+        if (rootView != null)
+            rootView?.setVisibility(View.GONE)
+        Handler().postDelayed({
+            snoozing = false
+        }, SNOOZE_DURATION.toLong())
     }
 
-    private fun logAttackStart() {
-        Log.e("++++++++++", "Atack Start: "+ dc.getDateTime())
+    private fun isSnoozing(): Boolean {
+        return snoozing == true
     }
 
     private fun setupBorderView(li: LayoutInflater) {
