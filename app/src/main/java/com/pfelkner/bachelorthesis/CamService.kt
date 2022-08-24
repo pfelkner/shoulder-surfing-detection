@@ -17,6 +17,7 @@ import android.util.Log
 import android.util.Size
 import android.view.*
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.math.MathUtils.clamp
 import com.google.mlkit.vision.common.InputImage
@@ -303,11 +304,8 @@ class CamService: Service() {
                 .addOnSuccessListener { faces ->
                     isProcessing = false
                     if (!isWarning && faces.size > 0) // TODO change to 1 for live version
-                        if (!isSnoozing())
-                            startWarning(image)
-                        dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
+                        startWarning(image)
                     if (isWarning && faces.size == 0 || isSnoozing()) { // TODO change to 1 for live version
-                        dc.logEvent(DataCollection.Trigger.DETECTION_END, alertMechanism, snoozing)
                         stopWarning()
                     }
                 }
@@ -340,12 +338,14 @@ class CamService: Service() {
     }
 
     private fun startWarning(image: Image?) {
+        dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        when (alertMechanism) {
-            AlertMechanism.WARNING_SIGN -> setupWarningView(li)
-            AlertMechanism.FLASHING_BORDERS -> setupBorderView(li)
-            AlertMechanism.ATTACKER_IMAGE -> setupAttackerView(li, image)
-        }
+        if (!snoozing)
+            when (alertMechanism) {
+                AlertMechanism.WARNING_SIGN -> setupWarningView(li)
+                AlertMechanism.FLASHING_BORDERS -> setupBorderView(li)
+                AlertMechanism.ATTACKER_IMAGE -> setupAttackerView(li, image)
+            }
 
         isWarning = true
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -355,6 +355,7 @@ class CamService: Service() {
     private fun stopWarning() {
         rootView?.setVisibility(View.GONE)
         isWarning = false
+        dc.logEvent(DataCollection.Trigger.DETECTION_END, alertMechanism, snoozing)
     }
 
     fun snooze() {
@@ -377,7 +378,6 @@ class CamService: Service() {
 
     private fun setupWarningView(li: LayoutInflater) {
         rootView = li.inflate(R.layout.alert_icon, null)
-//        textureView = rootView?.findViewById(R.id.texPreview)
         imageView = rootView?.findViewById(R.id.alertIconImageView)
         imageView?.setImageDrawable(drawable)
     }
@@ -385,6 +385,8 @@ class CamService: Service() {
 
     private fun setupAttackerView(li: LayoutInflater, image: Image?) {
         rootView = li.inflate(R.layout.alert_image, null)
+        imageView = rootView?.findViewById(R.id.attackerImageView)
+        imageView?.rotation = 270F
         if (image != null)
             imageView?.setImageBitmap(yuv420ToBitmap(image))
     }
