@@ -19,7 +19,8 @@
 
         <service android:name="com.pfelkner.bachelorthesis.CamService"/>
 
-        <activity android:name="com.pfelkner.bachelorthesis.MainActivity">
+        <activity android:name="com.pfelkner.bachelorthesis.MainActivity"
+                android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 

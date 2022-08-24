@@ -13,13 +13,13 @@ import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.renderscript.*
 import android.util.Log
 import android.util.Size
 import android.view.*
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.math.MathUtils.clamp
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -27,8 +27,9 @@ import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlin.experimental.and
+import java.nio.ByteBuffer
 import kotlin.math.absoluteValue
+
 
 class CamService: Service() {
 
@@ -390,7 +391,7 @@ class CamService: Service() {
         imageView = rootView?.findViewById(R.id.attackerImageView)
         imageView?.rotation = 270F
         if (image != null)
-            imageView?.setImageBitmap(yuv420ToBitmap(image))
+            imageView?.setImageBitmap(yuv_420_888_toRGB(image, image.width, image.height))
     }
 
     private fun determineParams(): WindowManager.LayoutParams {
@@ -415,85 +416,76 @@ class CamService: Service() {
 //        ORIENTATIONS.append(Surface.ROTATION_270, 270)
 //    }
 
-    fun yuv420ToBitmap(image: Image): Bitmap? {
-        require(image.format == ImageFormat.YUV_420_888) { "Invalid image format" }
-        val imageWidth = image.width
-        val imageHeight = image.height
-        // ARGB array needed by Bitmap static factory method I use below.
-        val argbArray = IntArray(imageWidth * imageHeight)
-        val yBuffer = image.planes[0].buffer
-        yBuffer.position(0)
+    private fun yuv_420_888_toRGB(image: Image, width: Int, height: Int): Bitmap? {
+        // Get the three image planes
+        val planes = image.planes
+        var buffer: ByteBuffer = planes[0].buffer
+        val y = ByteArray(buffer.remaining())
+        buffer.get(y)
+        buffer = planes[1].buffer
+        val u = ByteArray(buffer.remaining())
+        buffer.get(u)
+        buffer = planes[2].buffer
+        val v = ByteArray(buffer.remaining())
+        buffer.get(v)
 
-        // A YUV Image could be implemented with planar or semi planar layout.
-        // A planar YUV image would have following structure:
-        // YYYYYYYYYYYYYYYY
-        // ................
-        // UUUUUUUU
-        // ........
-        // VVVVVVVV
-        // ........
-        //
-        // While a semi-planar YUV image would have layout like this:
-        // YYYYYYYYYYYYYYYY
-        // ................
-        // UVUVUVUVUVUVUVUV   <-- Interleaved UV channel
-        // ................
-        // This is defined by row stride and pixel strides in the planes of the
-        // image.
+        // get the relevant RowStrides and PixelStrides
+        // (we know from documentation that PixelStride is 1 for y)
+        val yRowStride = planes[0].rowStride
+        val uvRowStride =
+            planes[1].rowStride // we know from   documentation that RowStride is the same for u and v.
+        val uvPixelStride =
+            planes[1].pixelStride // we know from   documentation that PixelStride is the same for u and v.
 
-        // Plane 1 is always U & plane 2 is always V
-        // https://developer.android.com/reference/android/graphics/ImageFormat#YUV_420_888
-        val uBuffer = image.planes[1].buffer
-        uBuffer.position(0)
-        val vBuffer = image.planes[2].buffer
-        vBuffer.position(0)
 
-        // The U/V planes are guaranteed to have the same row stride and pixel
-        // stride.
-        val yRowStride = image.planes[0].rowStride
-        val yPixelStride = image.planes[0].pixelStride
-        val uvRowStride = image.planes[1].rowStride
-        val uvPixelStride = image.planes[1].pixelStride
-        var r: Int
-        var g: Int
-        var b: Int
-        var yValue: Int
-        var uValue: Int
-        var vValue: Int
-        for (y in 0 until imageHeight) {
-            for (x in 0 until imageWidth) {
-                val yIndex = y * yRowStride + x * yPixelStride
-                // Y plane should have positive values belonging to [0...255]
-                yValue = (yBuffer[yIndex] and 0xff.toByte()).toInt()
-                val uvx = x / 2
-                val uvy = y / 2
-                // U/V Values are subsampled i.e. each pixel in U/V chanel in a
-                // YUV_420 image act as chroma value for 4 neighbouring pixels
-                val uvIndex = uvy * uvRowStride + uvx * uvPixelStride
+        // rs creation just for demo. Create rs just once in onCreate and use it again.
+        val rs = RenderScript.create(this)
+        //RenderScript rs = MainActivity.rs;
+        val mYuv420 = ScriptC_yuv420888(rs)
 
-                // U/V values ideally fall under [-0.5, 0.5] range. To fit them into
-                // [0, 255] range they are scaled up and centered to 128.
-                // Operation below brings U/V values to [-128, 127].
-                uValue = (uBuffer[uvIndex] and 0xff.toByte()) - 128
-                vValue = (vBuffer[uvIndex] and 0xff.toByte()) - 128
+        // Y,U,V are defined as global allocations, the out-Allocation is the Bitmap.
+        // Note also that uAlloc and vAlloc are 1-dimensional while yAlloc is 2-dimensional.
+        val typeUcharY: android.renderscript.Type.Builder = android.renderscript.Type.Builder(rs, Element.U8(rs))
 
-                // Compute RGB values per formula above.
-                r = (yValue + 1.370705f * vValue).toInt()
-                g = (yValue - 0.698001f * vValue - 0.337633f * uValue).toInt()
-                b = (yValue + 1.732446f * uValue).toInt()
-                r = clamp(r, 0, 255)
-                g = clamp(g, 0, 255)
-                b = clamp(b, 0, 255)
+        //using safe height
+        typeUcharY.setX(yRowStride).setY(y.size / yRowStride)
+        val yAlloc = Allocation.createTyped(rs, typeUcharY.create())
+        yAlloc.copyFrom(y)
+        mYuv420.set_ypsIn(yAlloc)
+        val typeUcharUV: Type.Builder = Type.Builder(rs, Element.U8(rs))
+        // note that the size of the u's and v's are as follows:
+        //      (  (width/2)*PixelStride + padding  ) * (height/2)
+        // =    (RowStride                          ) * (height/2)
+        // but I noted that on the S7 it is 1 less...
+        typeUcharUV.setX(u.size)
+        val uAlloc = Allocation.createTyped(rs, typeUcharUV.create())
+        uAlloc.copyFrom(u)
+        mYuv420.set_uIn(uAlloc)
+        val vAlloc = Allocation.createTyped(rs, typeUcharUV.create())
+        vAlloc.copyFrom(v)
+        mYuv420.set_vIn(vAlloc)
 
-                // Use 255 for alpha value, no transparency. ARGB values are
-                // positioned in each byte of a single 4 byte integer
-                // [AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB]
-                val argbIndex = y * imageWidth + x
-                argbArray[argbIndex] =
-                    255 shl 24 or (r and 255 shl 16) or (g and 255 shl 8) or (b and 255)
-            }
-        }
-        return Bitmap.createBitmap(argbArray, imageWidth, imageHeight, Bitmap.Config.ARGB_8888)
+        // handover parameters
+        mYuv420.set_picWidth(width.toLong())
+        mYuv420.set_uvRowStride(uvRowStride.toLong())
+        mYuv420.set_uvPixelStride(uvPixelStride.toLong())
+        val outBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val outAlloc = Allocation.createFromBitmap(
+            rs,
+            outBitmap,
+            Allocation.MipmapControl.MIPMAP_NONE,
+            Allocation.USAGE_SCRIPT
+        )
+        val lo = Script.LaunchOptions()
+        lo.setX(
+            0,
+            width
+        ) // by this we ignore the y’s padding zone, i.e. the right side of x between width and yRowStride
+        //using safe height
+        lo.setY(0, y.size / yRowStride)
+        mYuv420.forEach_doConvert(outAlloc, lo)
+        outAlloc.copyTo(outBitmap)
+        return outBitmap
     }
 
     companion object {
