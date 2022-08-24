@@ -100,7 +100,9 @@ class CamService: Service() {
     override fun onDestroy() {
         super.onDestroy()
 //        dc.saveLog()
-        Log.e("#*+#*+", "Amount of Logs: " + dc.entries.size)
+//        Log.e("#*+#*+", "Amount of Logs: " + dc.entries.size)
+        Toast.makeText(this, "Amount of Logs: " + dc.entries.size, Toast.LENGTH_LONG)
+            .show()
         stopCamera()
         if (rootView != null)
             wm?.removeView(rootView)
