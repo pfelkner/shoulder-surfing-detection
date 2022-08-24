@@ -32,15 +32,15 @@ class DataCollection constructor(context: Context){
         }
     }
 
-    fun getRingMode(): Int {
+    fun getRingMode(): String {
         val am = context.getSystemService(Service.AUDIO_SERVICE) as AudioManager
-
+        var ringMode : String = "Unkown"
         when (am.ringerMode) {
-            AudioManager.RINGER_MODE_SILENT -> Log.i("MyApp", "Silent mode")
-            AudioManager.RINGER_MODE_VIBRATE -> Log.i("MyApp", "Vibrate mode")
-            AudioManager.RINGER_MODE_NORMAL -> Log.i("MyApp", "Normal mode")
+            AudioManager.RINGER_MODE_SILENT -> ringMode = "Silent mode"
+            AudioManager.RINGER_MODE_VIBRATE -> ringMode = "Vibrate mode"
+            AudioManager.RINGER_MODE_NORMAL -> ringMode = "Normal mode"
         }
-        return am.ringerMode
+        return ringMode
     }
 
     fun getDateTime(): String {
@@ -87,14 +87,11 @@ class DataCollection constructor(context: Context){
 
     data class Entry(
         var id : String = "",
-        var source: String,
+        var trigger: String,
         var alertMode : String,
-        var date: String = "",
         var created: Timestamp,
-        var ringMode: Int = -1,
-        var ringModeDesc: String = "",
+        var ringMode: String = "",
         var activity: String = "",
-        var activityTransition: String = "",
         var snoozing: Boolean
     )
 
@@ -102,17 +99,14 @@ class DataCollection constructor(context: Context){
         var test: ArrayList<Entry>
     )
 
-    fun logEvent(event : Trigger, alertMechanism: AlertMechanism, snoozing: Boolean) {
+    fun logEvent(trigger : Trigger, alertMechanism: AlertMechanism, snoozing: Boolean) {
         val newEntry : Entry = Entry(
             getInstallationId(),
-            event.toString(),
+            trigger.toString(),
             alertMechanism.toString(),
-            getDateTime(),
             Timestamp.now(),
             getRingMode(),
-            "",
             getCurrentActivity(),
-            getCurrentTransition(),
             snoozing
         )
 //        dbWrite(newEntry)
@@ -132,26 +126,26 @@ class DataCollection constructor(context: Context){
 
 
     fun dbWrite(entry: Entry){
+//
+//        val newEntry = HashMap<String, Any>()
+//            newEntry["id"] = entry.id
+//            newEntry["source"] = entry.source
+//            newEntry["date"] = entry.date
+//            newEntry["timestamp"] = entry.created
+//            newEntry["ringMode"] = entry.ringMode
+//            newEntry["ringModeDesc"] = entry.ringModeDesc
+//            newEntry["ringModeDesc"] = entry.ringModeDesc
+//            newEntry["activity"] = entry.activity
+//            newEntry["activityTransition"] = entry.activityTransition
+//            newEntry["snoozing"] = entry.snoozing
+//            newEntries.add(newEntry)
+//            Log.e("!!!", newEntry.toString())
 
-        val newEntry = HashMap<String, Any>()
-            newEntry["id"] = entry.id
-            newEntry["source"] = entry.source
-            newEntry["date"] = entry.date
-            newEntry["timestamp"] = entry.created
-            newEntry["ringMode"] = entry.ringMode
-            newEntry["ringModeDesc"] = entry.ringModeDesc
-            newEntry["ringModeDesc"] = entry.ringModeDesc
-            newEntry["activity"] = entry.activity
-            newEntry["activityTransition"] = entry.activityTransition
-            newEntry["snoozing"] = entry.snoozing
-            newEntries.add(newEntry)
-            Log.e("!!!", newEntry.toString())
-
-        db.collection("Entries_" + getInstallationId()).document()
+        db.collection(getInstallationId() +"-"+ entry.alertMode).document()
             .set(entry)
             .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully written!") }
             .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }
-        Log.e("!!!", newEntry.toString())
+//        Log.e("!!!", newEntry.toString())
     }
 
 }
