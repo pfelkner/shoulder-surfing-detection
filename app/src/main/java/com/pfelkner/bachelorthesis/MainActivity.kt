@@ -187,13 +187,13 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     var mConnection: ServiceConnection = object : ServiceConnection {
 
         override fun onServiceDisconnected(name: ComponentName) {
-            showToast("Service is disconnected")
+//            showToast("Service is disconnected")
             bound = false
             camService = null
         }
 
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            showToast("Service is connected")
+//            showToast("Service is connected")
             bound = true
             val mLocalBinder: CamService.LocalBinder = service as CamService.LocalBinder
             camService = mLocalBinder.getCamService()
