@@ -1,6 +1,7 @@
 #pragma version(1)
 #pragma rs java_package_name(com.pfelkner.bachelorthesis);
 #pragma rs_fp_relaxed
+//https://stackoverflow.com/questions/36212904/yuv-420-888-interpretation-on-samsung-galaxy-s7-camera2
 
 int32_t width;
 int32_t height;
