@@ -18,4 +18,14 @@
     <string name="activity_update_remove_failed">activity_update_remove_failed</string>
     <string name="transition_update_remove_success">transition_update_remove_success</string>
     <string name="transition_update_remove_failed">transition_update_remove_failed</string>
+    <string name="textview">Please confirm to indicate that you have read and understood the  information about the study provided earlier and that any questions you might  have about the study have been answered.  Please tick the box to indicate your  agreement</string>
+    <string name="infosheet">I confirm that I have read and understood the Information Sheet, and  understand my Data Protection Rights under GPDR for the above study, and  have had the opportunity to ask questions.</string>
+    <string name="dataConsent">I understand that all data collected from me will be treated confidentially  and anonymized, will be seen in its raw form only by the experimenters, and  if published will not be identifiable as coming from me.</string>
+    <string name="withdrawConsent">I understand that participation in this study is voluntary and I may  withdraw consent at any time and for any reason. If requested, the data will  be deleted.</string>
+    <string name="studyConsent">I am not obligated to answer every question. I agree to immediately raise  any concerns or areas of discomfort during the study.</string>
+    <string name="dataStoreConsent">The researchers are allowed to archive all data captured from the  questionnaire in online repositories such as Enlighten: Research Data:  http://researchdata.gla.ac.uk/.</string>
+    <string name="contactConsent">I am aware of the fact that I can get in touch with the researchers at any  time to demand the deletion or retrieval of my responses.</string>
+    <string name="ageConsent">I also confirm that I am 18+ years old</string>
+    <string name="participationConsent">I agree to participate in the study conducted by PAUL AND WHO? at the ENTER UNIVERSITY titled “ENTER NAME"</string>
+    <string name="consentButton">Agree</string>
 </resources>

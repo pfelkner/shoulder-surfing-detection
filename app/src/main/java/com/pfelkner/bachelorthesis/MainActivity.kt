@@ -28,6 +28,7 @@ import com.pfelkner.bachelorthesis.util.Constants.ALERT_MODE_SELECTION
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.consent.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -69,6 +70,13 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             requestForUpdates()
         }
         checkDrawOverlayPermission()
+        if (!getConsent()) {
+            setContentView(R.layout.consent)
+            consentButton.setOnClickListener{
+                saveConsent()
+                setContentView(R.layout.activity_main)
+            }
+        }
     }
 
     // TODO handle permissions in an uniform way
@@ -355,6 +363,15 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             .putBoolean(Constants.SNOOZE_SELECTION, state)
             .apply()
     }
+
+    fun saveConsent() {
+        storage
+            .edit()
+            .putBoolean("CONSENT", true)
+            .apply()
+    }
+
+    private fun getConsent() = storage.getBoolean("CONSENT", false)
 
     private fun getSwitchState() = storage.getBoolean(SNOOZE_SELECTION, false)
 

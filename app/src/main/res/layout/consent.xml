@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+    <TextView
+            android:text="@string/textview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="33dp"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+            android:text="@string/infosheet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/infoSheet"
+            app:layout_constraintTop_toBottomOf="@+id/textView"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+            android:text="@string/dataConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/dataConsent"
+            app:layout_constraintTop_toBottomOf="@+id/infoSheet"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="196dp"
+            tools:layout_editor_absoluteX="173dp" />
+
+    <TextView
+            android:text="@string/withdrawConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/withdrawConsent"
+            app:layout_constraintTop_toBottomOf="@+id/dataConsent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="284dp"
+            tools:layout_editor_absoluteX="177dp" />
+
+    <TextView
+            android:text="@string/studyConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/studyConsent"
+            app:layout_constraintTop_toBottomOf="@+id/withdrawConsent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="348dp"
+            tools:layout_editor_absoluteX="175dp" />
+
+    <TextView
+            android:text="@string/dataStoreConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/dataStoreConsent"
+            app:layout_constraintTop_toBottomOf="@+id/studyConsent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="413dp"
+            tools:layout_editor_absoluteX="178dp" />
+
+    <TextView
+            android:text="@string/contactConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/contactConsent"
+            app:layout_constraintTop_toBottomOf="@+id/dataStoreConsent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="468dp"
+            tools:layout_editor_absoluteX="182dp" />
+
+    <TextView
+            android:text="@string/ageConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/ageConsent"
+            app:layout_constraintTop_toBottomOf="@+id/contactConsent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="540dp"
+            tools:layout_editor_absoluteX="180dp" />
+
+    <TextView
+            android:text="@string/participationConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/participationConsent"
+            app:layout_constraintTop_toBottomOf="@+id/ageConsent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteY="584dp"
+            tools:layout_editor_absoluteX="184dp" />
+
+    <Button
+            android:text="@string/consentButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/consentButton"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="641dp"
+            android:layout_marginEnd="162dp"
+            app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
