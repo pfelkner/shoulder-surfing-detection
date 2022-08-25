@@ -25,6 +25,7 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.nio.ByteBuffer
@@ -33,6 +34,8 @@ import kotlin.math.absoluteValue
 
 class CamService: Service() {
 
+    private lateinit var rs: RenderScript
+    private var attackStart: Long? = null
     private var snoozing: Boolean = false
     private lateinit var dc: DataCollection
     private lateinit var alertMechanism: AlertMechanism
@@ -75,6 +78,7 @@ class CamService: Service() {
         drawable = resources.getDrawable(R.drawable.ic_baseline_warning_24)
         dc = DataCollection(this)
         dc.setInstallationId()
+        rs = RenderScript.create(this)
         startForeground()
     }
 
@@ -306,11 +310,13 @@ class CamService: Service() {
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     isProcessing = false
-                    if (!isWarning && faces.size > 0) // TODO change to 1 for live version
+                    if (faces.size > 0 && attackStart == null)
+                        attackStart = System.currentTimeMillis()
+                    if (!isWarning && faces.size > 0 && isAttack()) // TODO change to 1 for live version
                         startWarning(image)
-                    if (isWarning && faces.size == 0 || isSnoozing()) { // TODO change to 1 for live version
+                    if (isWarning && faces.size == 0 || isSnoozing()) // TODO change to 1 for live version
                         stopWarning()
-                    }
+
                 }
                 .addOnFailureListener { e ->
                     Log.e("Face detection onFail: ", e.cause.toString())
@@ -323,11 +329,6 @@ class CamService: Service() {
                     image?.close()
                 }
         }
-    }
-
-    private fun logSnoozeStart() {
-        Log.e("++++++++++", "Snooze Start: "+ dc.getDateTime())
-        dc.logEvent(DataCollection.Trigger.SNOOZED, alertMechanism, snoozing)
     }
 
     private fun getFaceDetector(): FaceDetector {
@@ -356,9 +357,17 @@ class CamService: Service() {
     }
 
     private fun stopWarning() {
-        rootView?.setVisibility(View.GONE)
-        isWarning = false
         dc.logEvent(DataCollection.Trigger.DETECTION_END, alertMechanism, snoozing)
+        Handler().postDelayed({
+            rootView?.setVisibility(View.GONE)
+            isWarning = false
+            attackStart = null
+        }, 1000.toLong())
+    }
+
+    private fun isAttack(): Boolean {
+        val time = attackStart?.minus(System.currentTimeMillis())
+        return time != null && time.absoluteValue > 1000
     }
 
     fun snooze() {
@@ -385,13 +394,12 @@ class CamService: Service() {
         imageView?.setImageDrawable(drawable)
     }
 
-
     private fun setupAttackerView(li: LayoutInflater, image: Image?) {
         rootView = li.inflate(R.layout.alert_image, null)
         imageView = rootView?.findViewById(R.id.attackerImageView)
         imageView?.rotation = 270F
         if (image != null)
-            imageView?.setImageBitmap(yuv_420_888_toRGB(image, image.width, image.height))
+            imageView?.setImageBitmap(imageToBitmap(image, image.width, image.height))
     }
 
     private fun determineParams(): WindowManager.LayoutParams {
@@ -416,8 +424,7 @@ class CamService: Service() {
 //        ORIENTATIONS.append(Surface.ROTATION_270, 270)
 //    }
 
-    private fun yuv_420_888_toRGB(image: Image, width: Int, height: Int): Bitmap? {
-        // Get the three image planes
+    private fun imageToBitmap(image: Image, width: Int, height: Int): Bitmap? {
         val planes = image.planes
         var buffer: ByteBuffer = planes[0].buffer
         val y = ByteArray(buffer.remaining())
@@ -429,34 +436,21 @@ class CamService: Service() {
         val v = ByteArray(buffer.remaining())
         buffer.get(v)
 
-        // get the relevant RowStrides and PixelStrides
-        // (we know from documentation that PixelStride is 1 for y)
         val yRowStride = planes[0].rowStride
         val uvRowStride =
-            planes[1].rowStride // we know from   documentation that RowStride is the same for u and v.
+            planes[1].rowStride
         val uvPixelStride =
-            planes[1].pixelStride // we know from   documentation that PixelStride is the same for u and v.
-
-
-        // rs creation just for demo. Create rs just once in onCreate and use it again.
-        val rs = RenderScript.create(this)
-        //RenderScript rs = MainActivity.rs;
+            planes[1].pixelStride
         val mYuv420 = ScriptC_yuv420888(rs)
 
-        // Y,U,V are defined as global allocations, the out-Allocation is the Bitmap.
-        // Note also that uAlloc and vAlloc are 1-dimensional while yAlloc is 2-dimensional.
-        val typeUcharY: android.renderscript.Type.Builder = android.renderscript.Type.Builder(rs, Element.U8(rs))
+        val typeUcharY: Type.Builder = Type.Builder(rs, Element.U8(rs))
 
-        //using safe height
         typeUcharY.setX(yRowStride).setY(y.size / yRowStride)
         val yAlloc = Allocation.createTyped(rs, typeUcharY.create())
         yAlloc.copyFrom(y)
         mYuv420.set_ypsIn(yAlloc)
         val typeUcharUV: Type.Builder = Type.Builder(rs, Element.U8(rs))
-        // note that the size of the u's and v's are as follows:
-        //      (  (width/2)*PixelStride + padding  ) * (height/2)
-        // =    (RowStride                          ) * (height/2)
-        // but I noted that on the S7 it is 1 less...
+
         typeUcharUV.setX(u.size)
         val uAlloc = Allocation.createTyped(rs, typeUcharUV.create())
         uAlloc.copyFrom(u)
@@ -465,7 +459,6 @@ class CamService: Service() {
         vAlloc.copyFrom(v)
         mYuv420.set_vIn(vAlloc)
 
-        // handover parameters
         mYuv420.set_picWidth(width.toLong())
         mYuv420.set_uvRowStride(uvRowStride.toLong())
         mYuv420.set_uvPixelStride(uvPixelStride.toLong())
@@ -477,11 +470,7 @@ class CamService: Service() {
             Allocation.USAGE_SCRIPT
         )
         val lo = Script.LaunchOptions()
-        lo.setX(
-            0,
-            width
-        ) // by this we ignore the y’s padding zone, i.e. the right side of x between width and yRowStride
-        //using safe height
+        lo.setX(0, width)
         lo.setY(0, y.size / yRowStride)
         mYuv420.forEach_doConvert(outAlloc, lo)
         outAlloc.copyTo(outBitmap)
