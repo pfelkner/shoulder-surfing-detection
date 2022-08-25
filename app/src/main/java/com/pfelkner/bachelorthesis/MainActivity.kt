@@ -46,27 +46,12 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
         setContentView(R.layout.activity_main)
         val sharedPref = this.getPreferences(Context.MODE_PRIVATE)
+        storage = PreferenceManager.getDefaultSharedPreferences(this)
+        client = ActivityRecognition.getClient(this)
+        switchSnooze.isChecked = getSwitchState()
         initView()
 
-        client = ActivityRecognition.getClient(this)
-        storage = PreferenceManager.getDefaultSharedPreferences(this)
 //        requestPermission()
-
-        switchSnooze.isChecked = getSwitchState()
-        switchSnooze.setOnCheckedChangeListener { _, isChecked ->
-//            saveSwitchState(isChecked)
-            if (isChecked && isServiceRunning(this, CamService::class.java)) {
-                Log.e("HELP", ("'*'*'*"+ camService == null).toString())
-                camService?.snooze()
-                Handler().postDelayed({
-                    switchSnooze.isChecked = false
-                }, SNOOZE_DURATION.toLong())
-            } else {
-                showToast("Service isn't running")
-                switchSnooze.isChecked = false
-            }
-            saveSwitchState(switchSnooze.isChecked)
-        }
 
         val radiog = findViewById(R.id.radio) as RadioGroup
         radiog.check(getRadioState())
@@ -168,10 +153,27 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
         butStop.setOnClickListener {
             stopService(Intent(this, CamService::class.java))
+            switchSnooze.isChecked = false
+            saveSwitchState(switchSnooze.isChecked)
             if (bound) {
                 unbindService(mConnection)
                 bound = false
             }
+        }
+
+        switchSnooze.setOnCheckedChangeListener { _, isChecked ->
+//            saveSwitchState(isChecked)
+            if (isChecked && isServiceRunning(this, CamService::class.java)) {
+                Log.e("HELP", ("'*'*'*"+ camService == null).toString())
+                camService?.snooze()
+                Handler().postDelayed({
+                    switchSnooze.isChecked = false
+                }, SNOOZE_DURATION.toLong())
+            } else {
+                showToast("Service isn't running")
+                switchSnooze.isChecked = false
+            }
+            saveSwitchState(switchSnooze.isChecked)
         }
     }
 
@@ -187,13 +189,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     var mConnection: ServiceConnection = object : ServiceConnection {
 
         override fun onServiceDisconnected(name: ComponentName) {
-//            showToast("Service is disconnected")
             bound = false
             camService = null
         }
 
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-//            showToast("Service is connected")
             bound = true
             val mLocalBinder: CamService.LocalBinder = service as CamService.LocalBinder
             camService = mLocalBinder.getCamService()
@@ -204,6 +204,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private fun flipButtonVisibility(running: Boolean) {
         butStart.visibility =  if (running) View.GONE else View.VISIBLE
         butStop.visibility =  if (running) View.VISIBLE else View.GONE
+        switchSnooze.visibility = if (running) View.VISIBLE else View.GONE
     }
 
     fun getSelectedRadio() : Int {
@@ -285,11 +286,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         requestForUpdates()
     }
 
-// moved up to compare to other permission request
-//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-//        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
-//    }
 
     @SuppressLint("MissingPermission") // TODO
     private fun requestForUpdates() {
@@ -299,10 +295,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 getPendingIntent()
             )
             .addOnSuccessListener {
-                showToast("successful registration")
+                Log.i("Acitvity Detection", "successful registration")
             }
             .addOnFailureListener { e: Exception ->
-                showToast("Unsuccessful registration")
+                Log.i("Acitvity Detection", "Unsuccessful registrationn")
             }
     }
 
@@ -312,10 +308,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             .removeActivityTransitionUpdates(getPendingIntent())
             .addOnSuccessListener {
                 getPendingIntent().cancel()
-                showToast("successful deregistration")
+                Log.i("Acitvity Detection", "successful deregistration")
             }
             .addOnFailureListener { e: Exception ->
-                showToast("unsuccessful deregistration")
+                Log.i("Acitvity Detection", "unsuccessful deregistration")
             }
     }
 

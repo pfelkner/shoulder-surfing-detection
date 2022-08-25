@@ -343,16 +343,16 @@ class CamService: Service() {
     private fun startWarning(image: Image?) {
         dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        if (!snoozing)
+        if (!snoozing) {
             when (alertMechanism) {
                 AlertMechanism.WARNING_SIGN -> setupWarningView(li)
                 AlertMechanism.FLASHING_BORDERS -> setupBorderView(li)
                 AlertMechanism.ATTACKER_IMAGE -> setupAttackerView(li, image)
             }
-
+            wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            wm!!.addView(rootView, determineParams())
+        }
         isWarning = true
-        wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        wm!!.addView(rootView, determineParams())
     }
 
     private fun stopWarning() {
