@@ -367,7 +367,7 @@ class CamService: Service() {
 
     private fun isAttack(): Boolean {
         val time = attackStart?.minus(System.currentTimeMillis())
-        return time != null && time.absoluteValue > 1000
+        return time != null && time.absoluteValue > 1600
     }
 
     fun snooze() {
