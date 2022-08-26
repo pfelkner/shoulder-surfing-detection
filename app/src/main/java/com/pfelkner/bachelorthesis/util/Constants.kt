@@ -8,4 +8,5 @@ object Constants {
     const val ALERT_MODE_SELECTION = "ALERT_MODE_SELECTION"
     const val SNOOZE_SELECTION = "SNOOZE_SELECTION"
     const val SNOOZE_DURATION = 2500
+    const val DAY_MS = 86400000
 }
