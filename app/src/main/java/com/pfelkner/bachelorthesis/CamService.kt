@@ -24,8 +24,8 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
-import kotlinx.android.synthetic.main.activity_main.*
+import com.pfelkner.bachelorthesis.util.Constants
+import io.karn.notify.Notify
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.nio.ByteBuffer
@@ -36,6 +36,7 @@ class CamService: Service() {
 
     private lateinit var rs: RenderScript
     private var attackStart: Long? = null
+    private var snoozeStart: Long? = null
     private var snoozing: Boolean = false
     private lateinit var dc: DataCollection
     private lateinit var alertMechanism: AlertMechanism
@@ -98,14 +99,11 @@ class CamService: Service() {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
         }
-//        snooze()
         return super.onStartCommand(intent, flags, startId)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-//        dc.saveLog()
-//        Log.e("#*+#*+", "Amount of Logs: " + dc.entries.size)
         Toast.makeText(this, "Amount of Logs: " + dc.entries.size, Toast.LENGTH_LONG)
             .show()
         stopCamera()
@@ -290,18 +288,14 @@ class CamService: Service() {
         var image: Image? = null
         if (!isProcessing) {
             image = reader!!.acquireLatestImage()!!
-//            val buffer: ByteBuffer = image!!.planes[0].buffer
-//            val bytes = ByteArray(buffer.capacity())
-//            buffer.get(bytes)
-//            val bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-//            imgPath = saveToInternalStorage(bitmapImage)
 //            TODO IMPORTANT! figure this out, why is it not calculating orientation correctly?
             img = InputImage.fromMediaImage(image, 270)
             isProcessing = true
             captureSession!!.capture(captureRequest!!, captureCallback, null)
         }
-        Log.d(TAG, "Image Dimensions: " + image?.width + " x " + image?.height)
         detectFaces(getFaceDetector(), image)
+        if (snoozing)
+            checkSnooze()
     }
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
@@ -370,14 +364,33 @@ class CamService: Service() {
         return time != null && time.absoluteValue > 1600
     }
 
+    private fun checkSnooze() {
+        val time = snoozeStart?.minus(System.currentTimeMillis())
+        if (time != null && time.absoluteValue >= 10000) {
+            Notify
+                .with(this)
+                .content {
+                    title = "You are snoozing"
+                    text =
+                        "Please consider to disable snoozing"
+                }
+                .show(id = Constants.SNOOZE_NOTIFICATION_ID)
+            snoozeStart = System.currentTimeMillis()
+        }
+    }
+
     fun snooze() {
         snoozing = true
+        if (snoozeStart == null)
+            snoozeStart = System.currentTimeMillis()
         dc.logEvent(DataCollection.Trigger.SNOOZED, alertMechanism, snoozing)
         if (rootView != null)
-            rootView?.setVisibility(View.GONE)
-        Handler().postDelayed({
-            snoozing = false
-        }, SNOOZE_DURATION.toLong())
+            rootView?.visibility = View.GONE
+    }
+
+    fun stopSnooze() {
+        snoozing = false
+        snoozeStart = null
     }
 
     private fun isSnoozing(): Boolean {
@@ -476,6 +489,8 @@ class CamService: Service() {
         outAlloc.copyTo(outBitmap)
         return outBitmap
     }
+
+
 
     companion object {
 

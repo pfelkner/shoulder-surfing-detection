@@ -35,9 +35,7 @@ class ActivityTransitionReceiver: BroadcastReceiver() {
                         .content {
                             title = "Activity Detected"
                             text =
-                                "I can see you are in ${
-                                    activityType
-                                } state"
+                                "I can see you are in $activityType state"
                         }
                         .show(id = Constants.ACTIVITY_TRANSITION_NOTIFICATION_ID)
 

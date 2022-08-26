@@ -125,7 +125,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     override fun onDestroy() {
-//        removeActivityTransitionUpdates()
+        deregisterForUpdates()
         saveRadioState(getSelectedRadio())
         super.onDestroy()
     }
@@ -178,14 +178,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         switchSnooze.setOnCheckedChangeListener { _, isChecked ->
 //            saveSwitchState(isChecked)
             if (isChecked && isServiceRunning(this, CamService::class.java)) {
-                Log.e("HELP", ("'*'*'*"+ camService == null).toString())
                 camService?.snooze()
-                Handler().postDelayed({
-                    switchSnooze.isChecked = false
-                }, SNOOZE_DURATION.toLong())
             } else {
                 showToast("Service isn't running")
                 switchSnooze.isChecked = false
+                camService?.stopSnooze()
             }
             saveSwitchState(switchSnooze.isChecked)
         }
