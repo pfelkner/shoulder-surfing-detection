@@ -41,8 +41,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     // TODO
     // 2. activity manager ausprobieren
-    // 3. funktion zu dauer seit beginn, anzahl der erkennungen
-
 
     private var bound: Boolean = false
     private var camService : CamService? = null
@@ -59,9 +57,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         initView()
 
 //        requestPermission()
-
-        val radiog = findViewById(R.id.radio) as RadioGroup
-        radiog.check(getRadioState())
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             // We don't have camera permission yet. Request it from the user.
@@ -120,13 +115,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     override fun onPause() {
         super.onPause()
-        saveRadioState(getSelectedRadio())
         unregisterReceiver(receiver)
     }
 
     override fun onDestroy() {
         deregisterForUpdates()
-        saveRadioState(getSelectedRadio())
         super.onDestroy()
     }
 //
@@ -175,7 +168,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
 
         switchSnooze.setOnCheckedChangeListener { _, isChecked ->
-//            saveSwitchState(isChecked)
             if (isChecked && isServiceRunning(this, CamService::class.java)) {
                 camService?.snooze()
             } else {
@@ -214,12 +206,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         butStart.visibility =  if (running) View.GONE else View.VISIBLE
         butStop.visibility =  if (running) View.VISIBLE else View.GONE
         switchSnooze.visibility = if (running) View.VISIBLE else View.GONE
-    }
-
-    fun getSelectedRadio() : Int {
-        val radioGroup = findViewById(R.id.radio) as RadioGroup;
-        Log.e("RadioSelection", "getSelectedRadio: "+ radioGroup.getCheckedRadioButtonId())
-        return radioGroup.getCheckedRadioButtonId()
     }
 
     companion object {
@@ -290,8 +276,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
-//        switchActivityTransition.isChecked = true
-//        saveRadioState(true)
         requestForUpdates()
     }
 
@@ -355,8 +339,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             .putInt(ALERT_MODE_SELECTION, id)
             .apply()
     }
-
-    private fun getRadioState() = storage.getInt(ALERT_MODE_SELECTION, getSelectedRadio())
 
     fun saveSwitchState(state: Boolean) {
         storage
