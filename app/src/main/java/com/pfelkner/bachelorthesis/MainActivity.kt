@@ -39,7 +39,6 @@ lateinit var storage: SharedPreferences
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     // TODO
-    // 1. snooze auto disable ausbauen
     // 2. activity manager ausprobieren
     // 3. funktion zu dauer seit beginn, anzahl der erkennungen
 

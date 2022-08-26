@@ -35,7 +35,6 @@ import kotlin.math.absoluteValue
 class CamService: Service() {
 
     private lateinit var rs: RenderScript
-    private var attackStart: Long? = null
     private var snoozeStart: Long? = null
     private var snoozing: Boolean = false
     private lateinit var dc: DataCollection
@@ -304,9 +303,7 @@ class CamService: Service() {
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     isProcessing = false
-                    if (faces.size > 0 && attackStart == null)
-                        attackStart = System.currentTimeMillis()
-                    if (!isWarning && faces.size > 0 && isAttack()) // TODO change to 1 for live version
+                    if (!isWarning && faces.size > 0) // TODO change to 1 for live version
                         startWarning(image)
                     if (isWarning && faces.size == 0 || isSnoozing()) // TODO change to 1 for live version
                         stopWarning()
@@ -355,13 +352,7 @@ class CamService: Service() {
         Handler().postDelayed({
             rootView?.setVisibility(View.GONE)
             isWarning = false
-            attackStart = null
         }, 1000.toLong())
-    }
-
-    private fun isAttack(): Boolean {
-        val time = attackStart?.minus(System.currentTimeMillis())
-        return time != null && time.absoluteValue > 1600
     }
 
     private fun checkSnooze() {
