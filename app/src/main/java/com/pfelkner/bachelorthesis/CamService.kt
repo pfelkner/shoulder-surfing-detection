@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.hardware.camera2.*
+import android.hardware.camera2.CameraManager.AvailabilityCallback
 import android.media.Image
 import android.media.ImageReader
 import android.os.Binder
@@ -40,14 +41,12 @@ class CamService: Service() {
     private lateinit var dc: DataCollection
     private lateinit var alertMechanism: AlertMechanism
 
-    // UI
     private var wm: WindowManager? = null
     private var rootView: View? = null
     private var textureView: TextureView? = null
     private var imageView: ImageView? = null
     private lateinit var drawable: Drawable
 
-    // Camera2-related stuff
     private var cameraManager: CameraManager? = null
     private var previewSize: Size? = null
     private var cameraDevice: CameraDevice? = null
@@ -149,13 +148,22 @@ class CamService: Service() {
     private fun initCam(width: Int, height: Int) {
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val camId: String? = getFronFacingCamId()
+//        val availabilityCallback: AvailabilityCallback =
+//            object : CameraManager.AvailabilityCallback() {
+//                fun onCameraClosed(cameraId: String) {
+//                    Log.e(TAG, "CALLBACK 1")
+//                }
+//                fun onCameraOpened(cameraId: String, packageId: String) {
+//                    Log.e(TAG, "CALLBACK 2")
+//                }
+//            }
+//        cameraManager!!.registerAvailabilityCallback(availabilityCallback, null)
         previewSize = chooseSupportedSize(camId!!, width, height)
         // No Permission check required, done from the main activity
         cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
-    // TODO intruduce error handling here
-    //Dont get confused with the crossover of cam ID and facing direction, its working!
+
     private fun getFronFacingCamId(): String? {
         this.cameraManager!!.cameraIdList.forEach { id ->
             val facing = this.cameraManager!!.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING)
@@ -182,7 +190,6 @@ class CamService: Service() {
                 else it.height.toFloat()/it.width.toFloat()
                 (aspect - texViewAspect).absoluteValue
             },
-            // Also try to get similar resolution
             {
                 (texViewArea - it.width * it.height).absoluteValue
             }
@@ -235,7 +242,6 @@ class CamService: Service() {
 //                    ImageFormat.JPEG, 15
                     ImageFormat.YUV_420_888, 15
                 )
-                Log.e("ImageReader", "Width: "+ previewSize!!.width+ "Height: " + previewSize!!.height)
                 imageReader!!.setOnImageAvailableListener(imageListener, null)
                 targetSurfaces.add(imageReader!!.surface)
                 addTarget(imageReader!!.surface)
