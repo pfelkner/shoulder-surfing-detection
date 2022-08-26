@@ -3,6 +3,7 @@ package com.pfelkner.bachelorthesis
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
+import android.content.Context.ACTIVITY_SERVICE
 import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.Drawable
@@ -20,6 +21,7 @@ import android.view.*
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -333,6 +335,7 @@ class CamService: Service() {
     }
 
     private fun startWarning(image: Image?) {
+        dc.getUserActivity()
         dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         if (!snoozing) {

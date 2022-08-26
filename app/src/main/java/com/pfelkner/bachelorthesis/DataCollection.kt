@@ -1,9 +1,13 @@
 package com.pfelkner.bachelorthesis
 
+import android.app.ActivityManager
 import android.app.Service
 import android.content.Context
+import android.content.Context.ACTIVITY_SERVICE
 import android.media.AudioManager
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -11,7 +15,7 @@ import com.google.firebase.installations.FirebaseInstallations
 import com.pfelkner.bachelorthesis.CamService.Companion.TAG
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
+
 
 class DataCollection constructor(context: Context){
     val context = context
@@ -67,6 +71,18 @@ class DataCollection constructor(context: Context){
             return ""
         else
             return installationId as String
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    fun getUserActivity() {
+        val activityManager = context.getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        val runningAppProcessInfo = activityManager.runningAppProcesses
+        val runningAppProcess = activityManager.appTasks
+        val tasks = activityManager.appTasks
+
+        for (task in tasks) {
+            Log.e(TAG, "stackId: " + task.taskInfo.taskId)
+        }
     }
 
     companion object {
