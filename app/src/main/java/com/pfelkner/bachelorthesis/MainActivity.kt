@@ -38,6 +38,12 @@ const val PERMISSION_REQUEST_CUSTOM = 42069
 lateinit var storage: SharedPreferences
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
+    // TODO
+    // 1. snooze auto disable ausbauen
+    // 2. activity manager ausprobieren
+    // 3. funktion zu dauer seit beginn, anzahl der erkennungen
+
+
     private var bound: Boolean = false
     private var camService : CamService? = null
     lateinit var client: ActivityRecognitionClient
