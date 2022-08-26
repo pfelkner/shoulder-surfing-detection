@@ -83,7 +83,7 @@ class CamService: Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        alertMechanism = dc.getAlertMethod()
+        alertMechanism = dc.getAlertMethod2()
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
@@ -95,6 +95,7 @@ class CamService: Service() {
         super.onDestroy()
         Toast.makeText(this, "Amount of Logs: " + dc.entries.size, Toast.LENGTH_LONG)
             .show()
+        dc.updateAlertCounter(dc.alertCounter)
         stopCamera()
         stopWarning()
         if (rootView != null)
@@ -290,7 +291,7 @@ class CamService: Service() {
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
         launch {
-            Log.e("IMG", "IMG: "+ img.rotationDegrees)
+            Log.e("IMG", "IMG: "+ storage.getInt(Constants.STOARGE_COUNTER, 0))
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     isProcessing = false
@@ -325,6 +326,7 @@ class CamService: Service() {
 
     private fun startWarning(image: Image?) {
         dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
+        dc.alertCounter++
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         if (!snoozing) {
             when (alertMechanism) {
@@ -478,8 +480,8 @@ class CamService: Service() {
 
         const val TAG = "CamService"
 
-        const val ACTION_START = "eu.sisik.backgroundcam.action.START"
-        const val ACTION_STOPPED = "eu.sisik.backgroundcam.action.STOPPED"
+        const val ACTION_START = "ecom.pfelkner.bachelorthesis.action.START"
+        const val ACTION_STOPPED = "com.pfelkner.bachelorthesis.action.STOPPED"
 
         const val ONGOING_NOTIFICATION_ID = 6660
         const val CHANNEL_ID = "cam_service_channel_id"

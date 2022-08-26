@@ -14,6 +14,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.installations.FirebaseInstallations
 import com.pfelkner.bachelorthesis.CamService.Companion.TAG
 import com.pfelkner.bachelorthesis.util.Constants
+import com.pfelkner.bachelorthesis.util.Constants.COUNTER_INTERVAL
+import com.pfelkner.bachelorthesis.util.Constants.STOARGE_COUNTER
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -25,6 +27,7 @@ class DataCollection constructor(context: Context){
     private val docRef : DocumentReference = db.document("Entries/Test")
     var entries : MutableList<Entry> = mutableListOf()
     var newEntries : MutableList<(HashMap<String, Any>)> = mutableListOf()
+    var alertCounter = 0
 
     fun setInstallationId() {
         FirebaseInstallations.getInstance().id.addOnCompleteListener { task ->
@@ -105,6 +108,25 @@ class DataCollection constructor(context: Context){
              AlertMechanism.fromInt(2)
          else
              AlertMechanism.fromInt(1)
+    }
+
+     fun getAlertMethod2(): AlertMechanism {
+        val alertCounter = storage.getInt(STOARGE_COUNTER, 0)
+
+         return if (alertCounter >= (2*COUNTER_INTERVAL))
+             AlertMechanism.fromInt(3)
+         else if (alertCounter >= COUNTER_INTERVAL)
+             AlertMechanism.fromInt(2)
+         else
+             AlertMechanism.fromInt(1)
+    }
+
+    fun updateAlertCounter(alerts: Int) {
+        val previousAlerts = storage.getInt(STOARGE_COUNTER, 0)
+        storage
+            .edit()
+            .putInt(STOARGE_COUNTER, (alerts+previousAlerts))
+            .apply()
     }
 
     data class Entry(
