@@ -25,6 +25,7 @@ import com.google.android.gms.location.*
 import com.pfelkner.bachelorthesis.util.ActivityTransitionsUtil
 import com.pfelkner.bachelorthesis.util.Constants
 import com.pfelkner.bachelorthesis.util.Constants.ALERT_MODE_SELECTION
+import com.pfelkner.bachelorthesis.util.Constants.DAY_MS
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_DURATION
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
@@ -161,7 +162,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 notifyService(CamService.ACTION_START)
                 finish()
             }
-            sendFakeActivityTransitionEvent()
         }
 
         butStop.setOnClickListener {
@@ -190,7 +190,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private fun notifyService(action: String) {
         val startIntent = Intent(this, CamService::class.java)
         startIntent.action = action
-        startIntent.putExtra("selectedAlert", getSelectedRadio())
         startService(startIntent)
         val bindIntent = Intent(this, CamService::class.java)
         bindService(bindIntent, mConnection, BIND_AUTO_CREATE)
@@ -381,30 +380,5 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         if (view is RadioButton) {
             saveRadioState(view.id)
         }
-    }
-
-    fun sendFakeActivityTransitionEvent() {
-        // name your intended recipient class
-        val intent = Intent(this, ActivityTransitionReceiver::class.java)
-
-        val events: ArrayList<ActivityTransitionEvent> = arrayListOf()
-
-        // create fake events
-        events.add(
-            ActivityTransitionEvent(
-                DetectedActivity.ON_BICYCLE,
-                ActivityTransition.ACTIVITY_TRANSITION_ENTER,
-                SystemClock.elapsedRealtimeNanos()
-            )
-        )
-
-        // finally, serialize and send
-        val result = ActivityTransitionResult(events)
-        SafeParcelableSerializer.serializeToIntentExtra(
-            result,
-            intent,
-            "com.google.android.location.internal.EXTRA_ACTIVITY_TRANSITION_RESULT"
-        )
-        this.sendBroadcast(intent)
     }
 }

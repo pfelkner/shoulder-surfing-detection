@@ -82,18 +82,8 @@ class CamService: Service() {
         startForeground()
     }
 
-//    override fun onBind(p0: Intent?): IBinder? {
-//        return null
-//    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
-        if (intent != null)
-        // Default value is the id of pre selected radio button
-            Log.e("RADIO ID", "Button id is: "+intent.getIntExtra("selectedAlert", 2131230938))
-        if (intent != null) {
-            alertMechanism = AlertMechanism.fromInt(intent.getIntExtra("selectedAlert", 2131230938))
-        }
+        alertMechanism = dc.getAlertMethod()
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
@@ -106,6 +96,7 @@ class CamService: Service() {
         Toast.makeText(this, "Amount of Logs: " + dc.entries.size, Toast.LENGTH_LONG)
             .show()
         stopCamera()
+        stopWarning()
         if (rootView != null)
             wm?.removeView(rootView)
         sendBroadcast(Intent(ACTION_STOPPED))

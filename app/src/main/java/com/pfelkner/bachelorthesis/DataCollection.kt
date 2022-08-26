@@ -1,17 +1,22 @@
 package com.pfelkner.bachelorthesis
 
+import android.app.ActivityManager
 import android.app.Service
 import android.content.Context
+import android.content.Context.ACTIVITY_SERVICE
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.util.Log
+import androidx.core.content.ContextCompat.getSystemService
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.installations.FirebaseInstallations
 import com.pfelkner.bachelorthesis.CamService.Companion.TAG
+import com.pfelkner.bachelorthesis.util.Constants
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
+
 
 class DataCollection constructor(context: Context){
     val context = context
@@ -83,6 +88,23 @@ class DataCollection constructor(context: Context){
             currentTransition = transition
         }
 
+    }
+
+    fun getFirstInstall(context: Context): Long {
+        val pm = context.packageManager
+        return pm.getPackageInfo("com.pfelkner.bachelorthesis", PackageManager.GET_ACTIVITIES).firstInstallTime
+    }
+
+     fun getAlertMethod(): AlertMechanism {
+        val firstInstall = getFirstInstall(context)
+         val now = System.currentTimeMillis()
+
+         return if (firstInstall.minus(now) > (2* Constants.DAY_MS))
+             AlertMechanism.fromInt(3)
+         else if (firstInstall.minus(now) > Constants.DAY_MS)
+             AlertMechanism.fromInt(2)
+         else
+             AlertMechanism.fromInt(1)
     }
 
     data class Entry(
