@@ -1,13 +1,10 @@
 package com.pfelkner.bachelorthesis
 
-import android.app.ActivityManager
 import android.app.Service
 import android.content.Context
-import android.content.Context.ACTIVITY_SERVICE
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.util.Log
-import androidx.core.content.ContextCompat.getSystemService
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -16,7 +13,6 @@ import com.pfelkner.bachelorthesis.CamService.Companion.TAG
 import com.pfelkner.bachelorthesis.util.Constants
 import com.pfelkner.bachelorthesis.util.Constants.COUNTER_INTERVAL
 import com.pfelkner.bachelorthesis.util.Constants.STOARGE_COUNTER
-import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -51,12 +47,6 @@ class DataCollection constructor(context: Context){
         return ringMode
     }
 
-    fun getDateTime(): String {
-        val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
-        return sdf.format(Date())
-    }
-
-
     fun getCurrentActivity(): String {
         if (currentActivity == null)
             return ""
@@ -64,12 +54,6 @@ class DataCollection constructor(context: Context){
             return currentActivity as String
     }
 
-    fun getCurrentTransition(): String {
-        if (currentTransition == null)
-            return ""
-        else
-            return currentTransition as String
-    }
     fun getInstallationId(): String {
         if (installationId == null)
             return ""
@@ -162,12 +146,6 @@ class DataCollection constructor(context: Context){
         DETECTION_END,
         SNOOZED
     }
-
-//    fun dbWritePatch() {
-//        val new : Entries = Entries(arrayListOf(entries))
-//    }
-
-
 
     fun dbWrite(entry: Entry){
 //
