@@ -40,6 +40,7 @@ class CamService: Service() {
     private var snoozing: Boolean = false
     private lateinit var dc: DataCollection
     private lateinit var alertMechanism: AlertMechanism
+    private lateinit var context: Context
 
     private var wm: WindowManager? = null
     private var rootView: View? = null
@@ -75,14 +76,16 @@ class CamService: Service() {
     override fun onCreate() {
         super.onCreate()
         drawable = resources.getDrawable(R.drawable.ic_baseline_warning_24)
-        dc = DataCollection(this)
+        context = this
+        dc = DataCollection(context)
         dc.setInstallationId()
         rs = RenderScript.create(this)
         startForeground()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        alertMechanism = dc.getAlertMethod2()
+//        alertMechanism = dc.getAlertMethod2() // TODO make this safe
+        alertMechanism = AlertMechanism.WARNING_SIGN
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
@@ -291,6 +294,7 @@ class CamService: Service() {
             captureSession!!.capture(captureRequest!!, captureCallback, null)
         }
         detectFaces(getFaceDetector(), image)
+//        logActivity()
         if (snoozing)
             checkSnooze()
     }
