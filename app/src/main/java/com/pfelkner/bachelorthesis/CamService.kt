@@ -14,6 +14,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.os.SystemClock.sleep
 import android.renderscript.*
 import android.util.Log
 import android.util.Size
@@ -84,8 +85,8 @@ class CamService: Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-//        alertMechanism = dc.getAlertMethod2() // TODO make this safe
-        alertMechanism = AlertMechanism.WARNING_SIGN
+        alertMechanism = dc.getAlertMethod() // TODO make this safe
+//        alertMechanism = AlertMechanism.WARNING_SIGN
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
@@ -151,19 +152,29 @@ class CamService: Service() {
     private fun initCam(width: Int, height: Int) {
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val camId: String? = getFronFacingCamId()
-//        val availabilityCallback: AvailabilityCallback =
-//            object : CameraManager.AvailabilityCallback() {
+        val availabilityCallback: AvailabilityCallback =
+            object : CameraManager.AvailabilityCallback() {
+                override fun onCameraAvailable(cameraDeviceId: String) {
+                    Log.e(TAG, "CALLBACK 1")
+                    super.onCameraAvailable(cameraDeviceId)
+
+                }
+                override fun onCameraUnavailable(cameraDeviceId: String) {
+                    Toast.makeText(context, "UNAVAILABE", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "CALLBACK 2")
+                    super.onCameraUnavailable(cameraDeviceId)
+                }
 //                fun onCameraClosed(cameraId: String) {
 //                    Log.e(TAG, "CALLBACK 1")
 //                }
 //                fun onCameraOpened(cameraId: String, packageId: String) {
 //                    Log.e(TAG, "CALLBACK 2")
 //                }
-//            }
-//        cameraManager!!.registerAvailabilityCallback(availabilityCallback, null)
+            }
+        cameraManager!!.registerAvailabilityCallback(availabilityCallback, null)
         previewSize = chooseSupportedSize(camId!!, width, height)
         // No Permission check required, done from the main activity
-        cameraManager!!.openCamera(camId, stateCallback, null)
+//        cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
 
@@ -283,6 +294,7 @@ class CamService: Service() {
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
         if(isProcessing){
             captureSession!!.abortCaptures()
+            sleep(100)
         }
         if (windowManager == null) windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         var image: Image? = null
