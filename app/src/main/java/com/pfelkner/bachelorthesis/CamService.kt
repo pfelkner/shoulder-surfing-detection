@@ -64,6 +64,8 @@ class CamService: Service() {
 
     var mBinder: IBinder = LocalBinder()
 
+    private var isCamAvailable: Boolean = true
+
     override fun onBind(intent: Intent?): IBinder? {
         return mBinder
     }
@@ -87,11 +89,62 @@ class CamService: Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         alertMechanism = dc.getAlertMethod() // TODO make this safe
 //        alertMechanism = AlertMechanism.WARNING_SIGN
+        available()
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
 //            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    private fun available() {
+        if (cameraManager == null)
+            cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val availabilityCallback: AvailabilityCallback =
+            object : CameraManager.AvailabilityCallback() {
+                override fun onCameraUnavailable(cameraDeviceId: String) {
+                    Toast.makeText(context, "UNAVAILABE", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "CALLBACK 2")
+                    Log.e(TAG, "Service Running: "+ isServiceRunning(context, CamService::class.java))
+                    Log.e(TAG, "Capture Session: "+ captureSession)
+                    Log.e(TAG, "Camera Device: "+ cameraDevice)
+                    isCamAvailable = false
+                    super.onCameraUnavailable(cameraDeviceId)
+                    if (captureSession != null)
+                        captureSession!!.close()
+                }
+                @SuppressLint("MissingPermission")
+                override fun onCameraAvailable(cameraDeviceId: String) {
+                    Log.e(TAG, "CALLBACK 1")
+                    Log.e(TAG, "Service Running: "+ isServiceRunning(context, CamService::class.java))
+                    Log.e(TAG, "Capture Session: "+ captureSession)
+                    Log.e(TAG, "Camera Device: "+ cameraDevice)
+                    super.onCameraAvailable(cameraDeviceId)
+                    if (isServiceRunning(context, CamService::class.java) && cameraDevice == null && captureSession != null) {
+                        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+                        val camId: String? = getFronFacingCamId()
+                        // No Permission check required, done from the main activity
+                        if (camId != null) {
+                            cameraManager!!.openCamera(camId, stateCallback, null)
+                        }
+                    }
+//                        initCam(320,200)
+                    isCamAvailable = true
+//                    if (isServiceRunning(context, CamService::class.java)) {
+//                        stopSelf()
+//                        val startIntent = Intent(context, CamService::class.java)
+//                        startIntent.action = ACTION_START
+//                        startService(startIntent)
+//                    }
+                }
+//                fun onCameraClosed(cameraId: String) {
+//                    Log.e(TAG, "CALLBACK 1")
+//                }
+//                fun onCameraOpened(cameraId: String, packageId: String) {
+//                    Log.e(TAG, "CALLBACK 2")
+//                }
+            }
+        cameraManager!!.registerAvailabilityCallback(availabilityCallback, null)
     }
 
     override fun onDestroy() {
@@ -152,29 +205,9 @@ class CamService: Service() {
     private fun initCam(width: Int, height: Int) {
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val camId: String? = getFronFacingCamId()
-        val availabilityCallback: AvailabilityCallback =
-            object : CameraManager.AvailabilityCallback() {
-                override fun onCameraAvailable(cameraDeviceId: String) {
-                    Log.e(TAG, "CALLBACK 1")
-                    super.onCameraAvailable(cameraDeviceId)
-
-                }
-                override fun onCameraUnavailable(cameraDeviceId: String) {
-                    Toast.makeText(context, "UNAVAILABE", Toast.LENGTH_LONG).show()
-                    Log.e(TAG, "CALLBACK 2")
-                    super.onCameraUnavailable(cameraDeviceId)
-                }
-//                fun onCameraClosed(cameraId: String) {
-//                    Log.e(TAG, "CALLBACK 1")
-//                }
-//                fun onCameraOpened(cameraId: String, packageId: String) {
-//                    Log.e(TAG, "CALLBACK 2")
-//                }
-            }
-        cameraManager!!.registerAvailabilityCallback(availabilityCallback, null)
         previewSize = chooseSupportedSize(camId!!, width, height)
         // No Permission check required, done from the main activity
-//        cameraManager!!.openCamera(camId, stateCallback, null)
+        cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
 
@@ -219,14 +252,19 @@ class CamService: Service() {
     private val stateCallback = object : CameraDevice.StateCallback() {
         override fun onOpened(currentCameraDevice: CameraDevice) {
             cameraDevice = currentCameraDevice
-            createCaptureSession()
+            Log.e(TAG, "CAM: onOpened")
+            if (cameraDevice != null)
+                createCaptureSession()
         }
         override fun onDisconnected(currentCameraDevice: CameraDevice) {
             currentCameraDevice.close()
             cameraDevice = null
+            Log.e(TAG, "CAM: onDisconnected")
+            isCamAvailable = false
         }
         override fun onError(currentCameraDevice: CameraDevice, error: Int) {
             currentCameraDevice.close()
+            Log.e(TAG, "CAM: onError")
             cameraDevice = null
         }
     }
@@ -256,6 +294,7 @@ class CamService: Service() {
 //                    ImageFormat.JPEG, 15
                     ImageFormat.YUV_420_888, 15
                 )
+                isCamAvailable = true
                 imageReader!!.setOnImageAvailableListener(imageListener, null)
                 targetSurfaces.add(imageReader!!.surface)
                 addTarget(imageReader!!.surface)
@@ -292,27 +331,31 @@ class CamService: Service() {
     }
 
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
-        if(isProcessing){
+        if(isProcessing && captureSession != null || cameraDevice == null){
             captureSession!!.abortCaptures()
             sleep(100)
         }
         if (windowManager == null) windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         var image: Image? = null
-        if (!isProcessing) {
+        if (!isProcessing && captureSession!! != null) {
             image = reader!!.acquireLatestImage()!!
 //            TODO IMPORTANT! figure this out, why is it not calculating orientation correctly?
             img = InputImage.fromMediaImage(image, 270)
             isProcessing = true
             captureSession!!.capture(captureRequest!!, captureCallback, null)
         }
-        detectFaces(getFaceDetector(), image)
+        Log.e(TAG, "Availability: "+ isCamAvailable)
+        if (captureSession!! != null && isCamAvailable)
+            detectFaces(getFaceDetector(), image)
 //        logActivity()
         if (snoozing)
             checkSnooze()
     }
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
-        launch {
+        try {
+            launch {
+
             Log.e("IMG", "IMG: "+ storage.getInt(Constants.STOARGE_COUNTER, 0))
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
@@ -329,10 +372,18 @@ class CamService: Service() {
                     isProcessing = false
                 }
                 .addOnCompleteListener{
-                    if (captureSession != null && captureRequest != null)
-                        captureSession!!.capture(captureRequest!!, captureCallback, null)
-                    image?.close()
+                    try {
+                        if (captureSession != null && cameraDevice != null)
+                            captureSession!!.capture(captureRequest!!, captureCallback, null)
+                        image?.close()
+                    } catch (e: CameraAccessException) {
+                        Log.e(TAG, "createCaptureSession", e)
+                        Log.e(TAG, "#############")
+                    }
                 }
+            }
+        } catch (e: CameraAccessException) {
+            Log.e(TAG, "createCaptureSession", e)
         }
     }
 
