@@ -12,6 +12,7 @@ import android.preference.PreferenceManager
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -25,6 +26,7 @@ import com.pfelkner.bachelorthesis.util.Constants
 import com.pfelkner.bachelorthesis.util.Constants.ALERT_MODE_SELECTION
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.confirm_questionaire.*
 import kotlinx.android.synthetic.main.consent.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
@@ -41,6 +43,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private var bound: Boolean = false
     private var camService : CamService? = null
     lateinit var client: ActivityRecognitionClient
+    private lateinit var dc: DataCollection
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +53,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         storage = PreferenceManager.getDefaultSharedPreferences(this)
         client = ActivityRecognition.getClient(this)
         switchSnooze.isChecked = getSwitchState()
+        dc = DataCollection(this)
         initView()
 
 //        requestPermission()
@@ -67,11 +71,37 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             requestForUpdates()
         }
         checkDrawOverlayPermission()
+
+//        checkEligableForUse(dc.getAlertMethod().id)
+
         if (!getConsent()) {
             setContentView(R.layout.consent)
             consentButton.setOnClickListener{
                 saveConsent()
                 setContentView(R.layout.activity_main)
+            }
+        }
+    }
+
+    private fun checkEligableForUse(id: Int) {
+        when (id) {
+            3 -> return
+            1 -> check(1)
+            3 -> check(2)
+        }
+    }
+
+    private fun check(id: Int) {
+        if (getQuestionaireState(id))
+            return
+        else {
+            setContentView(R.layout.confirm_questionaire)
+            val code = findViewById(R.id.questionaireCode) as EditText;
+            confirm_questionaire.setOnClickListener{
+                if (code.text.toString() == Constants.Q1_CODE.toString()) {
+                    confirmQuestionaireState(id)
+                    finish()
+                }
             }
         }
     }
@@ -146,33 +176,37 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     private fun initView() {
-        butStart.setOnClickListener {
-            if (!isServiceRunning(this, CamService::class.java)) {
-                notifyService(CamService.ACTION_START)
-                finish()
+            butStart.setOnClickListener {
+                if (!isServiceRunning(this, CamService::class.java)) {
+                    notifyService(CamService.ACTION_START)
+                    finish()
+                }
             }
-        }
 
-        butStop.setOnClickListener {
-            stopService(Intent(this, CamService::class.java))
-            switchSnooze.isChecked = false
-            saveSwitchState(switchSnooze.isChecked)
-            if (bound) {
-                unbindService(mConnection)
-                bound = false
-            }
-        }
-
-        switchSnooze.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && isServiceRunning(this, CamService::class.java)) {
-                camService?.snooze()
-            } else {
-                showToast("Service isn't running")
+            butStop.setOnClickListener {
+                stopService(Intent(this, CamService::class.java))
                 switchSnooze.isChecked = false
-                camService?.stopSnooze()
+                saveSwitchState(switchSnooze.isChecked)
+                if (bound) {
+                    unbindService(mConnection)
+                    bound = false
+                }
             }
-            saveSwitchState(switchSnooze.isChecked)
-        }
+
+            switchSnooze.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked && isServiceRunning(this, CamService::class.java)) {
+                    camService?.snooze()
+                } else {
+                    showToast("Service isn't running")
+                    switchSnooze.isChecked = false
+                    camService?.stopSnooze()
+                }
+                saveSwitchState(switchSnooze.isChecked)
+            }
+    }
+
+    private fun eligableForUse(): Boolean {
+        return true
     }
 
     private fun notifyService(action: String) {
@@ -348,6 +382,17 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             .edit()
             .putBoolean("CONSENT", true)
             .apply()
+    }
+
+    fun confirmQuestionaireState(id: Int) {
+        storage
+            .edit()
+            .putBoolean("QUESTIONAIRE_"+id, true)
+            .apply()
+    }
+
+    fun getQuestionaireState(id : Int): Boolean {
+        return storage.getBoolean("QUESTIONAIRE_"+id, false)
     }
 
     private fun getConsent() = storage.getBoolean("CONSENT", false)

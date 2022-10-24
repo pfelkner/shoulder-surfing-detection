@@ -1,6 +1,9 @@
 package com.pfelkner.bachelorthesis.util
 
 object Constants {
+    const val Q1_CODE = 111111
+    const val Q2_CODE = 222222
+    const val Q3_CODE = 333333
     const val REQUEST_CODE_ACTIVITY_TRANSITION = 123
     const val REQUEST_CODE_INTENT_ACTIVITY_TRANSITION = 122
     const val ACTIVITY_TRANSITION_NOTIFICATION_ID = 111

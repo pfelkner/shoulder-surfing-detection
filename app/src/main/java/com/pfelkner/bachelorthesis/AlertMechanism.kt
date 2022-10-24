@@ -6,7 +6,7 @@ enum class AlertMechanism(val id: Int) {
     ATTACKER_IMAGE(3);
 
     companion object {
-        fun fromInt(id: Int) = AlertMechanism.values().first { it.id == id }
+        fun fromInt(id: Int) = values().first { it.id == id }
     }
 }
 
