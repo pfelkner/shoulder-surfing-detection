@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
         checkDrawOverlayPermission()
 
-//        checkEligableForUse(dc.getAlertMethod().id)
+        checkEligableForUse(dc.getAlertMethod().id)
 
         if (!getConsent()) {
             setContentView(R.layout.consent)
@@ -85,23 +85,23 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     private fun checkEligableForUse(id: Int) {
         when (id) {
-            3 -> return
-            1 -> check(1)
-            3 -> check(2)
+            1 -> return
+            2 -> check(1, Constants.CODE_Q1)
+            3 -> check(2, Constants.CODE_Q2)
         }
     }
 
-    private fun check(id: Int) {
+    private fun check(id: Int, qCode : Int) {
         if (getQuestionaireState(id))
             return
-        else {
-            setContentView(R.layout.confirm_questionaire)
-            val code = findViewById(R.id.questionaireCode) as EditText;
-            confirm_questionaire.setOnClickListener{
-                if (code.text.toString() == Constants.Q1_CODE.toString()) {
-                    confirmQuestionaireState(id)
-                    finish()
-                }
+
+        setContentView(R.layout.confirm_questionaire)
+        val code = findViewById(R.id.questionaireCode) as EditText
+        confirm_questionaire.setOnClickListener{
+            if (code.text.toString() == qCode.toString()) {
+                confirmQuestionaireState(id)
+//                finish()
+                setContentView(R.layout.activity_main)
             }
         }
     }
