@@ -27,7 +27,6 @@ import com.pfelkner.bachelorthesis.util.Constants.ALERT_MODE_SELECTION
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.confirm_questionaire.*
-import kotlinx.android.synthetic.main.consent.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -73,14 +72,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         checkDrawOverlayPermission()
 
         checkEligableForUse(dc.getAlertMethod().id)
-
-        if (!getConsent()) {
-            setContentView(R.layout.consent)
-            consentButton.setOnClickListener{
-                saveConsent()
-                setContentView(R.layout.activity_main)
-            }
-        }
     }
 
     private fun checkEligableForUse(id: Int) {
@@ -377,13 +368,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             .apply()
     }
 
-    fun saveConsent() {
-        storage
-            .edit()
-            .putBoolean("CONSENT", true)
-            .apply()
-    }
-
     fun confirmQuestionaireState(id: Int) {
         storage
             .edit()
@@ -394,8 +378,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     fun getQuestionaireState(id : Int): Boolean {
         return storage.getBoolean("QUESTIONAIRE_"+id, false)
     }
-
-    private fun getConsent() = storage.getBoolean("CONSENT", false)
 
     private fun getSwitchState() = storage.getBoolean(SNOOZE_SELECTION, false)
 
