@@ -11,4 +11,5 @@ object Constants {
     const val DAY_MS = 86400000
     const val COUNTER_INTERVAL = 10
     const val STOARGE_COUNTER = "STORAGE_COUNTER"
+    const val RESTART_SERVICE_NOTIFICATION_ID = 69
 }

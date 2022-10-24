@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.hardware.camera2.*
@@ -88,7 +89,7 @@ class CamService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         alertMechanism = dc.getAlertMethod() // TODO make this safe
-//        alertMechanism = AlertMechanism.WARNING_SIGN
+//        alertMechanism = AlertMechanism.ATTACKER_IMAGE
         available()
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
@@ -103,46 +104,64 @@ class CamService: Service() {
         val availabilityCallback: AvailabilityCallback =
             object : CameraManager.AvailabilityCallback() {
                 override fun onCameraUnavailable(cameraDeviceId: String) {
+                    isCamAvailable = false
                     Toast.makeText(context, "UNAVAILABE", Toast.LENGTH_LONG).show()
                     Log.e(TAG, "CALLBACK 2")
                     Log.e(TAG, "Service Running: "+ isServiceRunning(context, CamService::class.java))
                     Log.e(TAG, "Capture Session: "+ captureSession)
                     Log.e(TAG, "Camera Device: "+ cameraDevice)
-                    isCamAvailable = false
+                    Log.e(TAG, "AVA: "+ isCamAvailable)
                     super.onCameraUnavailable(cameraDeviceId)
-                    if (captureSession != null)
+                    if (isServiceRunning(context, CamService::class.java) && captureSession != null && cameraDevice == null) {
+                        stopSelf()
                         captureSession!!.close()
+                    }
+                    if (captureSession != null)
+//                        captureSession!!.close()
+                    if (cameraDevice != null)
+                        cameraDevice = null
+
+                    Notify
+                        .with(context)
+                        .content {
+                            title = "Activity Detected"
+                            text =
+                                "Please restart the service after camera use"
+                        }
+                        .show(id = Constants.RESTART_SERVICE_NOTIFICATION_ID)
                 }
                 @SuppressLint("MissingPermission")
                 override fun onCameraAvailable(cameraDeviceId: String) {
+                    isCamAvailable = true
                     Log.e(TAG, "CALLBACK 1")
                     Log.e(TAG, "Service Running: "+ isServiceRunning(context, CamService::class.java))
                     Log.e(TAG, "Capture Session: "+ captureSession)
                     Log.e(TAG, "Camera Device: "+ cameraDevice)
+                    Log.e(TAG, "AVA: "+ isCamAvailable)
+                    val startIntent = Intent(context, MainActivity::class.java)
+                    startIntent.action = ACTION_START
+                    startIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+
                     super.onCameraAvailable(cameraDeviceId)
-                    if (isServiceRunning(context, CamService::class.java) && cameraDevice == null && captureSession != null) {
-                        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-                        val camId: String? = getFronFacingCamId()
-                        // No Permission check required, done from the main activity
-                        if (camId != null) {
-                            cameraManager!!.openCamera(camId, stateCallback, null)
-                        }
+                    if (!isServiceRunning(context, CamService::class.java) && captureSession == null && cameraDevice == null && isCamAvailable) {
+                        Notify
+                            .with(context)
+                            .meta { // this: Payload.Meta
+                                // Launch the MainActivity once the notification is clicked.
+                                clickIntent = PendingIntent.getActivity(context,
+                                    0,
+                                    startIntent,
+                                    0)
+                            }
+                            .content {
+                                title = "Activity Detected"
+                                text =
+                                    "Restart now"
+                            }
+                            .show(id = Constants.RESTART_SERVICE_NOTIFICATION_ID)
+                        startActivity(startIntent)
                     }
-//                        initCam(320,200)
-                    isCamAvailable = true
-//                    if (isServiceRunning(context, CamService::class.java)) {
-//                        stopSelf()
-//                        val startIntent = Intent(context, CamService::class.java)
-//                        startIntent.action = ACTION_START
-//                        startService(startIntent)
-//                    }
                 }
-//                fun onCameraClosed(cameraId: String) {
-//                    Log.e(TAG, "CALLBACK 1")
-//                }
-//                fun onCameraOpened(cameraId: String, packageId: String) {
-//                    Log.e(TAG, "CALLBACK 2")
-//                }
             }
         cameraManager!!.registerAvailabilityCallback(availabilityCallback, null)
     }
@@ -353,7 +372,6 @@ class CamService: Service() {
     }
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
-        try {
             launch {
 
             Log.e("IMG", "IMG: "+ storage.getInt(Constants.STOARGE_COUNTER, 0))
@@ -382,9 +400,6 @@ class CamService: Service() {
                     }
                 }
             }
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "createCaptureSession", e)
-        }
     }
 
     private fun getFaceDetector(): FaceDetector {
@@ -553,7 +568,7 @@ class CamService: Service() {
 
         const val TAG = "CamService"
 
-        const val ACTION_START = "ecom.pfelkner.bachelorthesis.action.START"
+        const val ACTION_START = "com.pfelkner.bachelorthesis.action.START"
         const val ACTION_STOPPED = "com.pfelkner.bachelorthesis.action.STOPPED"
 
         const val ONGOING_NOTIFICATION_ID = 6660
