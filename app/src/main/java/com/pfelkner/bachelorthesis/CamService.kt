@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.Intent.*
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.hardware.camera2.*
@@ -140,7 +140,9 @@ class CamService: Service() {
                     Log.e(TAG, "AVA: "+ isCamAvailable)
                     val startIntent = Intent(context, MainActivity::class.java)
                     startIntent.action = ACTION_START
+//                    startIntent.addFlags(FLAG_ACTIVITY_BROUGHT_TO_FRONT)
                     startIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+                    startIntent.addFlags(FLAG_ACTIVITY_CLEAR_TOP)
 
                     super.onCameraAvailable(cameraDeviceId)
                     if (!isServiceRunning(context, CamService::class.java) && captureSession == null && cameraDevice == null && isCamAvailable) {
@@ -575,5 +577,11 @@ class CamService: Service() {
         const val CHANNEL_ID = "cam_service_channel_id"
         const val CHANNEL_NAME = "cam_service_channel_name"
 
+    }
+
+    private fun notifyService_test(action: String) {
+        val startIntent = Intent(this, CamService::class.java)
+        startIntent.action = action
+        startService(startIntent)
     }
 }
