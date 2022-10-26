@@ -380,9 +380,9 @@ class CamService: Service() {
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     isProcessing = false
-                    if (!isWarning && faces.size > 0) // TODO change to 1 for live version
+                    if (!isWarning && faces.size > 1) // TODO change to 1 for live version
                         startWarning(image)
-                    if (isWarning && faces.size == 0 || isSnoozing()) // TODO change to 1 for live version
+                    if (isWarning && faces.size == 1 || isSnoozing()) // TODO change to 1 for live version
                         stopWarning()
 
                 }

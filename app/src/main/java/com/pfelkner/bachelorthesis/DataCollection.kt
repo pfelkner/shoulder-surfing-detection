@@ -86,9 +86,9 @@ class DataCollection constructor(context: Context){
         val firstInstall = getFirstInstall(context)
          val now = System.currentTimeMillis()
 
-         return if (firstInstall.minus(now) > (2* Constants.DAY_MS))
+         return if (firstInstall.minus(now) > (2* Constants.THREE_H_MS))
              AlertMechanism.fromInt(3)
-         else if (firstInstall.minus(now) > Constants.DAY_MS)
+         else if (firstInstall.minus(now) > Constants.THREE_H_MS)
              AlertMechanism.fromInt(2)
          else
              AlertMechanism.fromInt(1)
@@ -137,7 +137,7 @@ class DataCollection constructor(context: Context){
             getCurrentActivity(),
             snoozing
         )
-//        dbWrite(newEntry)
+        dbWrite(newEntry)
         entries.add(newEntry)
     }
 

@@ -15,7 +15,9 @@
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginTop="343dp"
             app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="53dp" />
+            android:layout_marginStart="53dp"
+            tools:ignore="SpeakableTextPresentCheck"
+            android:minHeight="48dp" />
 
     <Button
             android:text="Enter"
@@ -26,4 +28,24 @@
             android:layout_marginTop="343dp"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="271dp" />
+
+    <TextView
+            android:text="Please complete the following questionaire and enter the code displayed at the end to continue the study"
+            android:layout_width="378dp"
+            android:layout_height="32dp"
+            android:id="@+id/questionaireAnnouncement"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="191dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="16dp" />
+
+    <TextView
+            android:text=""
+            android:layout_width="313dp"
+            android:layout_height="35dp"
+            android:id="@+id/questionaireLink"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="245dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="49dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

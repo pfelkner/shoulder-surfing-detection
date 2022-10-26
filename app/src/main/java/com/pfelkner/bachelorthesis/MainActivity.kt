@@ -14,6 +14,7 @@ import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.RadioButton
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
@@ -24,6 +25,9 @@ import com.google.android.gms.location.*
 import com.pfelkner.bachelorthesis.util.ActivityTransitionsUtil
 import com.pfelkner.bachelorthesis.util.Constants
 import com.pfelkner.bachelorthesis.util.Constants.ALERT_MODE_SELECTION
+import com.pfelkner.bachelorthesis.util.Constants.CODE_Q1
+import com.pfelkner.bachelorthesis.util.Constants.CODE_Q2
+import com.pfelkner.bachelorthesis.util.Constants.CODE_Q3
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.confirm_questionaire.*
@@ -75,11 +79,19 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     private fun checkEligableForUse(id: Int) {
-        when (id) {
-            1 -> return
-            2 -> check(1, Constants.CODE_Q1)
-            3 -> check(2, Constants.CODE_Q2)
-        }
+//        when (id) {
+//            1 -> return
+//            2 -> check(1, Constants.CODE_Q1)
+//            3 -> check(2, Constants.CODE_Q2)
+//        }
+        if (id == 1)
+            return
+        if (id == 2)
+            check(1, CODE_Q1)
+        else if (id == 3)
+            check(2, CODE_Q2)
+        else
+            check(3, CODE_Q3)
     }
 
     private fun check(id: Int, qCode : Int) {
@@ -88,6 +100,13 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
         setContentView(R.layout.confirm_questionaire)
         val code = findViewById(R.id.questionaireCode) as EditText
+        val link = findViewById(R.id.questionaireLink) as TextView
+        when (id) {
+            1 -> link.text = Constants.QUESTIONAIRE_1
+            2 -> link.text = Constants.QUESTIONAIRE_2
+            3 -> link.text = Constants.QUESTIONAIRE_3
+        }
+
         confirm_questionaire.setOnClickListener{
             if (code.text.toString() == qCode.toString()) {
                 confirmQuestionaireState(id)
