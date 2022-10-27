@@ -58,6 +58,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         switchSnooze.isChecked = getSwitchState()
         dc = DataCollection(this)
         initView()
+        val userId = findViewById(R.id.userId) as TextView
+        userId.text = dc.getInstallationId()
 
 //        requestPermission()
 
@@ -213,6 +215,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 }
                 saveSwitchState(switchSnooze.isChecked)
             }
+
+
     }
 
     private fun eligableForUse(): Boolean {

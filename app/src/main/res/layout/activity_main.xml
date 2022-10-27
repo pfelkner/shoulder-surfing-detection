@@ -44,4 +44,14 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:minHeight="48dp" />
 
+    <TextView
+            android:text=""
+            android:layout_width="116dp"
+            android:layout_height="21dp"
+            android:id="@+id/userId"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="128dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="147dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
