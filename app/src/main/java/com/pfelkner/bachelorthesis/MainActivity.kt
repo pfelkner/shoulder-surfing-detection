@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.*
 import android.preference.PreferenceManager
 import android.provider.Settings
+import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.View
 import android.widget.EditText
@@ -39,9 +40,6 @@ const val PERMISSION_REQUEST_ACTIVITY_RECOGNITION = 1000
 const val PERMISSION_REQUEST_CUSTOM = 42069
 lateinit var storage: SharedPreferences
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
-
-    // TODO
-    // 2. activity manager ausprobieren
 
     private var bound: Boolean = false
     private var camService : CamService? = null
@@ -81,11 +79,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     private fun checkEligableForUse(id: Int) {
-//        when (id) {
-//            1 -> return
-//            2 -> check(1, Constants.CODE_Q1)
-//            3 -> check(2, Constants.CODE_Q2)
-//        }
         if (id == 1)
             return
         if (id == 2)
@@ -108,6 +101,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             2 -> link.text = Constants.QUESTIONAIRE_2
             3 -> link.text = Constants.QUESTIONAIRE_3
         }
+//
+        link.setMovementMethod(LinkMovementMethod.getInstance())
 
         confirm_questionaire.setOnClickListener{
             if (code.text.toString() == qCode.toString()) {
@@ -167,7 +162,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 //        when (requestCode) {
 //            CODE_PERM_CAMERA -> {
 //                if (grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
-//                    Toast.makeText(this, getString(R.string.err_no_cam_permission), Toast.LENGTH_LONG).show()
 //                    finish()
 //                }
 //            }
@@ -209,7 +203,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 if (isChecked && isServiceRunning(this, CamService::class.java)) {
                     camService?.snooze()
                 } else {
-                    showToast("Service isn't running")
                     switchSnooze.isChecked = false
                     camService?.stopSnooze()
                 }
@@ -368,6 +361,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             this,
             Constants.REQUEST_CODE_INTENT_ACTIVITY_TRANSITION,
             intent,
+            PendingIntent.FLAG_IMMUTABLE or
             PendingIntent.FLAG_UPDATE_CURRENT
         )
     }

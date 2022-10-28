@@ -10,7 +10,6 @@ android {
     compileSdkVersion 31
     defaultConfig {
         applicationId "com.pfelkner.bachelorthesis"
-//        applicationId "eu.sisik.backgroundcam"
         minSdkVersion 22
         targetSdkVersion 31
         versionCode 1

@@ -18,4 +18,7 @@
     <string name="activity_update_remove_failed">activity_update_remove_failed</string>
     <string name="transition_update_remove_success">transition_update_remove_success</string>
     <string name="transition_update_remove_failed">transition_update_remove_failed</string>
+    <string name="questionaire_1"><a href="https://survey.eu.qualtrics.com/jfe/form/SV_cObYYn5CWO3xVEW">Questionaire 1</a></string>
+    <string name="questionaire_2"><a href="https://qfreeaccountssjc1.az1.qualtrics.com/jfe/form/SV_es8NONO21FIbimi">Questionaire 2</a></string>
+    <string name="questionaire_3"><a href="https://qfreeaccountssjc1.az1.qualtrics.com/jfe/form/SV_0DljZg5MFaR29bE">Questionaire 3</a></string>
 </resources>

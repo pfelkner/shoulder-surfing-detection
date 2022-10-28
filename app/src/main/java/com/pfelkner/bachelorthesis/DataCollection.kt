@@ -14,6 +14,7 @@ import com.pfelkner.bachelorthesis.util.Constants
 import com.pfelkner.bachelorthesis.util.Constants.COUNTER_INTERVAL
 import com.pfelkner.bachelorthesis.util.Constants.STOARGE_COUNTER
 import java.util.*
+import kotlin.math.absoluteValue
 
 
 class DataCollection constructor(context: Context){
@@ -86,9 +87,9 @@ class DataCollection constructor(context: Context){
         val firstInstall = getFirstInstall(context)
          val now = System.currentTimeMillis()
 
-         return if (firstInstall.minus(now) > (2* Constants.FIVE_M_MS))
+         return if (firstInstall.minus(now).absoluteValue > (2* Constants.FIVE_M_MS))
              AlertMechanism.fromInt(3)
-         else if (firstInstall.minus(now) > Constants.FIVE_M_MS)
+         else if (firstInstall.minus(now).absoluteValue > Constants.FIVE_M_MS)
              AlertMechanism.fromInt(2)
          else
              AlertMechanism.fromInt(1)

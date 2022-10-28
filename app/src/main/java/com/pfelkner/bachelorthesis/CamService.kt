@@ -21,7 +21,6 @@ import android.util.Log
 import android.util.Size
 import android.view.*
 import android.widget.ImageView
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
@@ -105,7 +104,6 @@ class CamService: Service() {
             object : CameraManager.AvailabilityCallback() {
                 override fun onCameraUnavailable(cameraDeviceId: String) {
                     isCamAvailable = false
-                    Toast.makeText(context, "UNAVAILABE", Toast.LENGTH_LONG).show()
                     Log.e(TAG, "CALLBACK 2")
                     Log.e(TAG, "Service Running: "+ isServiceRunning(context, CamService::class.java))
                     Log.e(TAG, "Capture Session: "+ captureSession)
@@ -146,21 +144,21 @@ class CamService: Service() {
 
                     super.onCameraAvailable(cameraDeviceId)
                     if (!isServiceRunning(context, CamService::class.java) && captureSession == null && cameraDevice == null && isCamAvailable) {
-                        Notify
-                            .with(context)
-                            .meta { // this: Payload.Meta
-                                // Launch the MainActivity once the notification is clicked.
-                                clickIntent = PendingIntent.getActivity(context,
-                                    0,
-                                    startIntent,
-                                    0)
-                            }
-                            .content {
-                                title = "Activity Detected"
-                                text =
-                                    "Restart now"
-                            }
-                            .show(id = Constants.RESTART_SERVICE_NOTIFICATION_ID)
+//                        Notify
+//                            .with(context)
+//                            .meta { // this: Payload.Meta
+//                                // Launch the MainActivity once the notification is clicked.
+//                                clickIntent = PendingIntent.getActivity(context,
+//                                    0,
+//                                    startIntent,
+//                                    0)
+//                            }
+//                            .content {
+//                                title = "Activity Detected"
+//                                text =
+//                                    "Restart now"
+//                            }
+//                            .show(id = Constants.RESTART_SERVICE_NOTIFICATION_ID)
                         startActivity(startIntent)
                     }
                 }
@@ -170,8 +168,6 @@ class CamService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Toast.makeText(this, "Amount of Logs: " + dc.entries.size, Toast.LENGTH_LONG)
-            .show()
         dc.updateAlertCounter(dc.alertCounter)
         stopCamera()
         stopWarning()
@@ -183,7 +179,7 @@ class CamService: Service() {
     private fun startForeground() {
         val pendingIntent: PendingIntent =
             Intent(this, MainActivity::class.java).let { notificationIntent ->
-                PendingIntent.getActivity(this, 0, notificationIntent, 0)
+                PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_MUTABLE)
             }
         val notification = createNotification(pendingIntent)
         startForeground(ONGOING_NOTIFICATION_ID, notification)
@@ -374,15 +370,15 @@ class CamService: Service() {
     }
 
     private fun detectFaces(faceDetector: FaceDetector, image: Image?) = runBlocking {
-            launch {
+        launch {
 
             Log.e("IMG", "IMG: "+ storage.getInt(Constants.STOARGE_COUNTER, 0))
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     isProcessing = false
-                    if (!isWarning && faces.size > 1) // TODO change to 1 for live version
+                    if (!isWarning && faces.size > 0) // TODO change to 1 for live version
                         startWarning(image)
-                    if (isWarning && faces.size == 1 || isSnoozing()) // TODO change to 1 for live version
+                    if (isWarning && faces.size == 0 || isSnoozing()) // TODO change to 1 for live version
                         stopWarning()
 
                 }
@@ -415,6 +411,7 @@ class CamService: Service() {
     }
 
     private fun startWarning(image: Image?) {
+//        alertMechanism = dc.getAlertMethod()
         dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
         dc.alertCounter++
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
