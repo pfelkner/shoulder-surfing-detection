@@ -31,7 +31,7 @@ import com.pfelkner.bachelorthesis.util.Constants.CODE_Q2
 import com.pfelkner.bachelorthesis.util.Constants.CODE_Q3
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.confirm_questionaire.*
+import kotlinx.android.synthetic.main.confirm_questionaire_1.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -93,18 +93,18 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         if (getQuestionaireState(id))
             return
 
-        setContentView(R.layout.confirm_questionaire)
+//        setContentView(R.layout.confirm_questionaire_1)
+        when (id) {
+            1 -> setContentView(R.layout.confirm_questionaire_1)
+            2 -> setContentView(R.layout.confirm_questionaire_2)
+            3 -> setContentView(R.layout.confirm_questionaire_3)
+        }
         val code = findViewById(R.id.questionaireCode) as EditText
         val link = findViewById(R.id.questionaireLink) as TextView
-        when (id) {
-            1 -> link.text = Constants.QUESTIONAIRE_1
-            2 -> link.text = Constants.QUESTIONAIRE_2
-            3 -> link.text = Constants.QUESTIONAIRE_3
-        }
 //
         link.setMovementMethod(LinkMovementMethod.getInstance())
 
-        confirm_questionaire.setOnClickListener{
+        confirm_questionaire_btn.setOnClickListener{
             if (code.text.toString() == qCode.toString()) {
                 confirmQuestionaireState(id)
 //                finish()
@@ -144,6 +144,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
         val running = isServiceRunning(this, CamService::class.java)
         flipButtonVisibility(running)
+
+//        checkEligableForUse(dc.getAlertMethod().id)
     }
 
     override fun onPause() {
@@ -155,18 +157,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         deregisterForUpdates()
         super.onDestroy()
     }
-//
-//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-//
-//        when (requestCode) {
-//            CODE_PERM_CAMERA -> {
-//                if (grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
-//                    finish()
-//                }
-//            }
-//        }
-//    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -210,10 +200,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             }
 
 
-    }
-
-    private fun eligableForUse(): Boolean {
-        return true
     }
 
     private fun notifyService(action: String) {
