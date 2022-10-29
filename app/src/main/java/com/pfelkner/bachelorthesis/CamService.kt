@@ -88,11 +88,9 @@ class CamService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         alertMechanism = dc.getAlertMethod() // TODO make this safe
-//        alertMechanism = AlertMechanism.ATTACKER_IMAGE
         available()
         when(intent?.action) {
             ACTION_START -> initCam(320, 200)
-//            ACTION_START -> initCam(1080, 1080) TODO figure out what size is best for perfomrance while keeping accuracy
         }
         return super.onStartCommand(intent, flags, startId)
     }
@@ -104,11 +102,6 @@ class CamService: Service() {
             object : CameraManager.AvailabilityCallback() {
                 override fun onCameraUnavailable(cameraDeviceId: String) {
                     isCamAvailable = false
-                    Log.e(TAG, "CALLBACK 2")
-                    Log.e(TAG, "Service Running: "+ isServiceRunning(context, CamService::class.java))
-                    Log.e(TAG, "Capture Session: "+ captureSession)
-                    Log.e(TAG, "Camera Device: "+ cameraDevice)
-                    Log.e(TAG, "AVA: "+ isCamAvailable)
                     super.onCameraUnavailable(cameraDeviceId)
                     if (isServiceRunning(context, CamService::class.java) && captureSession != null && cameraDevice == null) {
                         stopSelf()
@@ -138,7 +131,6 @@ class CamService: Service() {
                     Log.e(TAG, "AVA: "+ isCamAvailable)
                     val startIntent = Intent(context, MainActivity::class.java)
                     startIntent.action = ACTION_START
-//                    startIntent.addFlags(FLAG_ACTIVITY_BROUGHT_TO_FRONT)
                     startIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
                     startIntent.addFlags(FLAG_ACTIVITY_CLEAR_TOP)
 
@@ -376,9 +368,9 @@ class CamService: Service() {
             faceDetector.process(img)
                 .addOnSuccessListener { faces ->
                     isProcessing = false
-                    if (!isWarning && faces.size > 0) // TODO change to 1 for live version
+                    if (!isWarning && faces.size > 1) // TODO change to 1 for live version
                         startWarning(image)
-                    if (isWarning && faces.size == 0 || isSnoozing()) // TODO change to 1 for live version
+                    if (isWarning && faces.size == 1 || isSnoozing()) // TODO change to 1 for live version
                         stopWarning()
 
                 }
@@ -573,11 +565,5 @@ class CamService: Service() {
         const val CHANNEL_ID = "cam_service_channel_id"
         const val CHANNEL_NAME = "cam_service_channel_name"
 
-    }
-
-    private fun notifyService_test(action: String) {
-        val startIntent = Intent(this, CamService::class.java)
-        startIntent.action = action
-        startService(startIntent)
     }
 }

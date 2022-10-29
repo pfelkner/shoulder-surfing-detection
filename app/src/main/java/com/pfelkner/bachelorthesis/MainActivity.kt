@@ -109,8 +109,13 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         confirm_questionaire_btn.setOnClickListener{
             if (code.text.toString() == qCode.toString()) {
                 confirmQuestionaireState(id)
-                setContentView(R.layout.activity_main)
-                initView()
+                val startIntent = Intent(this, MainActivity::class.java)
+//                startIntent.action = CamService.ACTION_START
+                startIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+//                setContentView(R.layout.activity_main)
+//                initView()
+                startActivity(startIntent)
             }
         }
     }
