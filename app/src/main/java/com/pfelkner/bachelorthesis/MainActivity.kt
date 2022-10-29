@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
         checkDrawOverlayPermission()
 
-        checkEligableForUse(dc.getAlertMethod().id)
+//        checkEligableForUse(dc.getAlertMethod().id)
     }
 
     private fun checkEligableForUse(id: Int) {
@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             return
         if (id == 2)
             check(1, CODE_Q1)
-        else if (id == 3)
+        else if (id == 3 && !getQuestionaireState(2))
             check(2, CODE_Q2)
         else
             check(3, CODE_Q3)
@@ -93,7 +93,9 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         if (getQuestionaireState(id))
             return
 
-//        setContentView(R.layout.confirm_questionaire_1)
+        val stopIntent = Intent(this, CamService::class.java)
+        stopService(stopIntent)
+
         when (id) {
             1 -> setContentView(R.layout.confirm_questionaire_1)
             2 -> setContentView(R.layout.confirm_questionaire_2)
@@ -107,8 +109,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         confirm_questionaire_btn.setOnClickListener{
             if (code.text.toString() == qCode.toString()) {
                 confirmQuestionaireState(id)
-//                finish()
                 setContentView(R.layout.activity_main)
+                initView()
             }
         }
     }
@@ -145,7 +147,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         val running = isServiceRunning(this, CamService::class.java)
         flipButtonVisibility(running)
 
-//        checkEligableForUse(dc.getAlertMethod().id)
+        checkEligableForUse(dc.getAlertMethod().id)
     }
 
     override fun onPause() {

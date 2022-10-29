@@ -411,7 +411,6 @@ class CamService: Service() {
     }
 
     private fun startWarning(image: Image?) {
-//        alertMechanism = dc.getAlertMethod()
         dc.logEvent(DataCollection.Trigger.ATTACK_DETECTED, alertMechanism, snoozing)
         dc.alertCounter++
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
