@@ -48,4 +48,25 @@
             android:layout_marginTop="245dp"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="49dp" />
+
+
+    <TextView
+            android:text="User Id: "
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/userIdLabel"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="62dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="16dp" />
+
+    <TextView
+            android:text="__________"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/userIdValue"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="62dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="67dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

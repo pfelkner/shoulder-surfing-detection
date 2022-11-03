@@ -103,6 +103,9 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
         val code = findViewById(R.id.questionaireCode) as EditText
         val link = findViewById(R.id.questionaireLink) as TextView
+        val userIdVal = findViewById(R.id.userIdValue) as TextView
+
+        userIdVal.text = dc.getInstallationId()
 //
         link.setMovementMethod(LinkMovementMethod.getInstance())
 
