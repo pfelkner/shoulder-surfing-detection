@@ -14,7 +14,6 @@ import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.View
 import android.widget.EditText
-import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -76,7 +75,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
         checkDrawOverlayPermission()
 
-        if (dc.getUserId() == null) {
+        if (dc.getUserId() == null || dc.getUserId() == "") {
             askForUserId()
         }
         userId.text = dc.getUserId()
@@ -85,7 +84,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private fun askForUserId() {
         setContentView(R.layout.prompt_user_id)
         val userInput = findViewById(R.id.userIdPrompt) as EditText
-        var idsList = Array(30){""}
+        var idsList = Array(31){""}
 
         for (n in 1..30){
             idsList[n] = "P"+n
