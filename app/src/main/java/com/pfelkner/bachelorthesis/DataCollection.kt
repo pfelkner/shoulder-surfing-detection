@@ -62,6 +62,22 @@ class DataCollection constructor(context: Context){
             return installationId as String
     }
 
+    fun getUserId(): String {
+        if (storage.getString("userId", null) == null)
+            return ""
+        else
+            return storage.getString("userId", null) as String
+    }
+
+     fun setUserId(newId : String) {
+        if (getUserId() != null) {
+            storage
+                .edit()
+                .putString("userId", newId)
+                .apply()
+        }
+    }
+
     companion object {
         var currentActivity: String? = null
         private var currentTransition: String? = null
@@ -164,7 +180,7 @@ class DataCollection constructor(context: Context){
 //            newEntries.add(newEntry)
 //            Log.e("!!!", newEntry.toString())
 
-        db.collection(getInstallationId() +"-"+ entry.alertMode).document()
+        db.collection(getUserId() +"-"+ entry.alertMode).document()
             .set(entry)
             .addOnSuccessListener { Log.d(TAG, "DocumentSnapshot successfully written!") }
             .addOnFailureListener { e -> Log.w(TAG, "Error writing document", e) }

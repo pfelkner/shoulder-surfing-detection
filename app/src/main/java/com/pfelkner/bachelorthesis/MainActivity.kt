@@ -32,6 +32,7 @@ import com.pfelkner.bachelorthesis.util.Constants.CODE_Q3
 import com.pfelkner.bachelorthesis.util.Constants.SNOOZE_SELECTION
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.confirm_questionaire_1.*
+import kotlinx.android.synthetic.main.prompt_user_id.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -57,7 +58,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         dc = DataCollection(this)
         initView()
         val userId = findViewById(R.id.userId) as TextView
-        userId.text = dc.getInstallationId()
+
 
 //        requestPermission()
 
@@ -75,7 +76,30 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
         checkDrawOverlayPermission()
 
-//        checkEligableForUse(dc.getAlertMethod().id)
+        if (dc.getUserId() == null) {
+            askForUserId()
+        }
+        userId.text = dc.getUserId()
+    }
+
+    private fun askForUserId() {
+        setContentView(R.layout.prompt_user_id)
+        val userInput = findViewById(R.id.userIdPrompt) as EditText
+        var idsList = Array(30){""}
+
+        for (n in 1..30){
+            idsList[n] = "P"+n
+        }
+
+        enterIdBtn.setOnClickListener{
+            if (idsList.contains(userInput.text.toString())) {
+//            if (userInput.text.toString() != "") {
+                dc.setUserId(userInput.text.toString())
+                setContentView(R.layout.activity_main)
+            } else {
+                Toast.makeText(getApplicationContext(),"Invalid Id. Please make sure to enter your Id from the invitation email",Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private fun checkEligableForUse(id: Int) {
@@ -119,6 +143,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 //                setContentView(R.layout.activity_main)
 //                initView()
                 startActivity(startIntent)
+            } else {
+                Toast.makeText(getApplicationContext(),"Incorrect Code. Please make sure to enter the correct code",Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -394,9 +420,14 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     private fun getSwitchState() = storage.getBoolean(SNOOZE_SELECTION, false)
 
-    fun onRadioButtonClicked(view: View) {
-        if (view is RadioButton) {
-            saveRadioState(view.id)
-        }
-    }
+//    private fun getUserId() = storage.getString("userId", null)
+//
+//    private fun setUserId(newId : String) {
+//        if (getUserId() != null) {
+//            storage
+//                .edit()
+//                .putString("userId", newId)
+//                .apply()
+//        }
+//    }
 }
