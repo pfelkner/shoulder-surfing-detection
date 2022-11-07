@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         val userId = findViewById(R.id.userId) as TextView
 
 
+
 //        requestPermission()
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -128,7 +129,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         val link = findViewById(R.id.questionaireLink) as TextView
         val userIdVal = findViewById(R.id.userIdValue) as TextView
 
-        userIdVal.text = dc.getInstallationId()
+        userIdVal.text = dc.getUserId()
 //
         link.setMovementMethod(LinkMovementMethod.getInstance())
 
