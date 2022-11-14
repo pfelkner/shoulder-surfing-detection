@@ -103,9 +103,9 @@ class DataCollection constructor(context: Context){
         val firstInstall = getFirstInstall(context)
          val now = System.currentTimeMillis()
 
-         return if (firstInstall.minus(now).absoluteValue > (2* Constants.THREE_H_MS))
+         return if (firstInstall.minus(now).absoluteValue > (2* Constants.TWO_DAY_MS))
              AlertMechanism.fromInt(3)
-         else if (firstInstall.minus(now).absoluteValue > Constants.THREE_H_MS)
+         else if (firstInstall.minus(now).absoluteValue > Constants.TWO_DAY_MS)
              AlertMechanism.fromInt(2)
          else
              AlertMechanism.fromInt(1)
@@ -146,7 +146,7 @@ class DataCollection constructor(context: Context){
 
     fun logEvent(trigger : Trigger, alertMechanism: AlertMechanism, snoozing: Boolean) {
         val newEntry : Entry = Entry(
-            getInstallationId(),
+            getUserId(),
             trigger.toString(),
             alertMechanism.toString(),
             Timestamp.now(),
@@ -154,7 +154,7 @@ class DataCollection constructor(context: Context){
             getCurrentActivity(),
             snoozing
         )
-        dbWrite(newEntry)
+//        dbWrite(newEntry)
         entries.add(newEntry)
     }
 

@@ -33,6 +33,7 @@
             android:layout_marginBottom="32dp"
             app:layout_constraintBottom_toBottomOf="parent" />
 
+
     <Switch
             android:text="Snooze Alerts"
             android:layout_width="wrap_content"
@@ -52,6 +53,16 @@
             app:layout_constraintTop_toTopOf="parent"
             android:layout_marginTop="128dp"
             app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="147dp" />
+            android:layout_marginStart="212dp" />
+
+    <TextView
+            android:text="Participant ID: "
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/id_Label"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="128dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="115dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

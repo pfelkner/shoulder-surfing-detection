@@ -12,6 +12,7 @@ object Constants {
     const val SNOOZE_SELECTION = "SNOOZE_SELECTION"
     const val SNOOZE_DURATION = 2500
     const val DAY_MS = 86400000
+    const val TWO_DAY_MS = 172800000
     const val THREE_H_MS = 10800000
     const val FIVE_M_MS = 300000
     const val COUNTER_INTERVAL = 10

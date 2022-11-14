@@ -419,7 +419,8 @@ class CamService: Service() {
     }
 
     private fun stopWarning() {
-        dc.logEvent(DataCollection.Trigger.DETECTION_END, alertMechanism, snoozing)
+        if (isWarning)
+            dc.logEvent(DataCollection.Trigger.DETECTION_END, alertMechanism, snoozing)
         Handler().postDelayed({
             rootView?.setVisibility(View.GONE)
             isWarning = false

@@ -95,8 +95,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             if (idsList.contains(userInput.text.toString())) {
 //            if (userInput.text.toString() != "") {
                 dc.setUserId(userInput.text.toString())
-                setContentView(R.layout.activity_main)
-                initView()
+//                setContentView(R.layout.activity_main)
+//                initView()
+                finish()
+                val startIntent = Intent(this, MainActivity::class.java)
+                startActivity(startIntent)
             } else {
                 Toast.makeText(getApplicationContext(),"Invalid Id. Please make sure to enter your Id from the invitation email",Toast.LENGTH_LONG).show();
             }
