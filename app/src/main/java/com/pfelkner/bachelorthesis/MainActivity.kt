@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         val running = isServiceRunning(this, CamService::class.java)
         flipButtonVisibility(running)
 
-        checkEligableForUse(dc.getAlertMethod().id)
+//        checkEligableForUse(dc.getAlertMethod().id)
     }
 
     override fun onPause() {
