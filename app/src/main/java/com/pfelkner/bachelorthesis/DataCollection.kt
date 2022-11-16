@@ -155,7 +155,7 @@ class DataCollection constructor(context: Context){
             getCurrentActivity(),
             snoozing
         )
-//        dbWrite(newEntry)
+        dbWrite(newEntry)
         entries.add(newEntry)
     }
 
