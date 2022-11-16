@@ -103,13 +103,12 @@ class DataCollection constructor(context: Context){
         val firstInstall = getFirstInstall(context)
          val now = System.currentTimeMillis()
 
-//         return if (firstInstall.minus(now).absoluteValue > (2* Constants.TWO_DAY_MS))
-//             AlertMechanism.fromInt(3)
-//         else if (firstInstall.minus(now).absoluteValue > Constants.TWO_DAY_MS)
-//             AlertMechanism.fromInt(2)
-//         else
-//             AlertMechanism.fromInt(1)
-          return AlertMechanism.fromInt(2)
+         return if (firstInstall.minus(now).absoluteValue > (2* Constants.TWO_DAY_MS))
+             AlertMechanism.fromInt(2)
+         else if (firstInstall.minus(now).absoluteValue > Constants.TWO_DAY_MS)
+             AlertMechanism.fromInt(1)
+         else
+             AlertMechanism.fromInt(3)
     }
 
      fun getAlertMethod2(): AlertMechanism {
